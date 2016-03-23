@@ -3,6 +3,7 @@ import os
 import fnmatch
 import glob
 import numpy as np
+from sklearn import grid_search
 import pandas as pd
 from sklearn.ensemble import GradientBoostingClassifier
 import matplotlib.pyplot as plt
@@ -27,22 +28,22 @@ CRITICAL_ISOTOPE_LIST_ = ['140Ce', '139La', '206Pb', '208Pb',
                           '88Sr', '90Zr', '66Zn', '107Ag']
 
 # Set the initial parameters for GBC to use in the initial tuning round
-GBC_INIT_PARAMS = {'loss': 'exponential', 'learning_rate': 0.3,
-                   'min_samples_leaf': 50, 'n_estimators': 1000,
+GBC_INIT_PARAMS = {'loss': 'exponential', 'learning_rate': 0.1,
+                   'min_samples_leaf': 25, 'n_estimators': 1000,
                    'random_state': None, 'max_features': 'auto'}
 
-GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential'],
+GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential','deviance'],
                           'learning_rate': [0.01, 0.1, 0.3],
                           'min_samples_leaf': [50, 75, 100],
                           'random_state': [None],
-                          'max_features': ['auto'],
-                          'max_depth': [3]}  # note n_estimators automatically set
+                          'min_samples_split': [50,100,300],
+                          'max_features': ['auto','sqrt'],
+                          'max_depth': [5]}  # note n_estimators automatically set
 
 
-def main(path='.', databases_filepath=DATABASES_BASEPATH,
-         filter_negative=True, detection_threshold=True,
-         threshold_value=0, isotope_trigger='140Ce',
-         corrplot_training_show=True, max_n_estimators=1000):
+def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         detection_threshold=True, crossfolds=5, threshold_value=0, isotope_trigger=['140Ce'],
+         corrplot_training_show=False, max_n_estimators=1000):
     NON_CRITICAL_ISOTOPES_ = set(ISOTOPE_LIST_) - set(CRITICAL_ISOTOPE_LIST_)
 
     os.chdir(IMPORT_TRAINING_DATABASE_PATH)
@@ -77,10 +78,11 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH,
             training_data = training_data[training_data[isotopes] >= 0]
 
     if detection_threshold:
-        training_data = training_data[training_data[isotope_trigger] >= threshold_value]
+        for isotopes in isotope_trigger:
+            training_data = training_data[training_data[isotopes] >= threshold_value]
 
     if corrplot_training_show:
-        c = corrplot.Corrplot(training_data).plot(
+        corrplot.Corrplot(training_data).plot(
             upper='text', lower='circle', fontsize=8,
             colorbar=False, shrink=.9)
         plt.savefig('corrplot_training_data.eps', format='eps')
@@ -111,7 +113,23 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH,
     test_best_iter = x[np.argmin(test_score)]
     print "optimum number of boosting stages: ", test_best_iter
 
-    GBC_GRID_SEARCH_PARAMS['n_estimators'] = test_best_iter
+    GBC_GRID_SEARCH_PARAMS['n_estimators'] = [test_best_iter]
+
+    # investigate the best possible set of parameters using a cross
+    # validation loop and the given grid. The cross-validation does not do
+    # random shuffles, but the estimator does use randomness (and
+    # takes random_state via dpgrid).
+    grid_searcher = grid_search.GridSearchCV(estimator=gbc, cv=crossfolds,
+                                             param_grid=GBC_GRID_SEARCH_PARAMS, n_jobs=-1)
+
+    # call the grid search fit using the data
+    grid_searcher.fit(X, y)
+
+    # store and print the best parameters
+    best_params = grid_searcher.best_params_
+    print best_params
+
+    gbc = GradientBoostingClassifier(**best_params)
 
     gbc.fit(X, y)
 
@@ -137,7 +155,7 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH,
                 test_data = test_data[test_data[isotopes] >= 0]
 
         if detection_threshold:
-            for isotopes in list(test_data):
+            for isotopes in isotope_trigger:
                 test_data = test_data[test_data[isotopes] >= threshold_value]
 
         # assign orignal data a new name for later analysis
@@ -177,11 +195,8 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH,
         X_test_preserved['natural_class_proba'] = np.array(X_test_nat_proba[1])
 
     X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'summary.csv'),
-                             index = False)
+                             index=False)
 
 
 if __name__ == '__main__':  # wrap inside to prevent parallelize errors on windows.
-    main(path='.', databases_filepath=DATABASES_BASEPATH,
-         filter_negative=True, detection_threshold=True,
-         threshold_value=0, isotope_trigger='140Ce',
-         corrplot_training_show=True, max_n_estimators=1000)
+    main()
