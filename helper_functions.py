@@ -2,6 +2,18 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.grid_search import GridSearchCV
 import numpy as np
+import os
+
+
+def make_dirs(path):
+    """Recursively make directories, ignoring when they already exist.
+    See: http://stackoverflow.com/a/600612/1275412
+    """
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST or not os.path.isdir(path):
+            raise
 
 def techVnatCount (target_feature):
 
