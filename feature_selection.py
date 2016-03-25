@@ -393,7 +393,7 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, iterations=1,
 #
 #     print("mean_squared_error Grid Score for Increasing Features")
 #     print(rfecvGridScoresAll)
-#     rfecvGridScoresAll.to_csv('7_rfecv_grid_score.csv')
+#     rfecvGridScoresAll.to_csv('7_rfecv_grid.csv')
 #
 #     ## Output file summary
 #     fileName1 = 'f1_score_all.csv'
