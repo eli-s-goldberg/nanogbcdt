@@ -24,8 +24,6 @@ ISOTOPE_LIST_ = ['107Ag', '109Ag', '139La', '140Ce', '141Pr', '143Nd',
                  '55Mn', '59Co', '60Ni', '65Cu', '66Zn', '88Sr',
                  '90Zr', '93Nb', '95Mo']
 
-# CRITICAL_ISOTOPE_LIST_ = ['140Ce', '139La', '206Pb', '208Pb',
-#                           '88Sr', '90Zr', '66Zn', '107Ag']
 CRITICAL_ISOTOPE_LIST_ = ['140Ce', '139La',
                           '88Sr']
 # Set the initial parameters for GBC to use in the initial tuning round
@@ -35,7 +33,7 @@ GBC_INIT_PARAMS = {'loss': 'deviance', 'learning_rate': 0.1,
 
 GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
                           'learning_rate': [0.01, 0.1],
-                          'min_samples_leaf': [50,100],
+                          'min_samples_leaf': [50, 100],
                           'random_state': [None],
                           'max_features': ['sqrt', 'log2'],
                           'max_depth': [5]}  # note n_estimators automatically set
@@ -74,15 +72,16 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
 
     training_data = pd.concat([natural_training_database, technical_training_database])
     training_data = training_data.dropna()
-    training_data = training_data.drop(NON_CRITICAL_ISOTOPES_, axis=1)
 
     if filter_negative:
-        for isotopes in list(training_data):
+        for isotopes in list(ISOTOPE_LIST_):
             training_data = training_data[training_data[isotopes] >= 0]
 
     if detection_threshold:
         for isotopes in isotope_trigger:
             training_data = training_data[training_data[isotopes] >= threshold_value]
+
+    training_data = training_data.drop(NON_CRITICAL_ISOTOPES_, axis=1)
 
     if corrplot_training_show:
         corrplot.Corrplot(training_data).plot(
@@ -156,19 +155,20 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
         test_data = pd.read_csv(os.path.join(
             IMPORT_TESTING_DATABASE_PATH, test), header=0, index_col=0)
         test_data.reset_index(drop=True, inplace=True)
-        test_data = test_data.dropna()
-        test_data = test_data.drop(NON_CRITICAL_ISOTOPES_, axis=1)
 
         if filter_negative:
-            for isotopes in list(test_data):
+            for isotopes in list(ISOTOPE_LIST_):
                 test_data = test_data[test_data[isotopes] >= 0]
 
         if detection_threshold:
             for isotopes in isotope_trigger:
                 test_data = test_data[test_data[isotopes] >= threshold_value]
 
+        test_data = test_data.dropna()
+        test_data = test_data.drop(NON_CRITICAL_ISOTOPES_, axis=1)
         # assign orignal data a new name for later analysis
         X_test_preserved = test_data.copy(deep=True)
+        print X_test_preserved.head()
 
         # change format for machine learning
         X_test = test_data.as_matrix()
@@ -192,8 +192,7 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
 
             total_nat_above_proba_thresh = total_natural_by_proba - nat_above_thresh
             total_tech_above_proba_thresh = total_technical_by_proba - tech_above_thresh
-            # total_nat_above_proba_thresh_track.append(total_nat_above_proba_thresh)
-            # total_tech_above_proba_thresh_track.append(total_tech_above_proba_thresh)
+
         else:
             total_nat_above_proba_thresh = 0
             total_tech_above_proba_thresh = 0
@@ -214,13 +213,13 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
 
         X_test_nat_proba = pd.DataFrame(X_test_predicted_proba)
         X_test_preserved['natural_class_proba'] = np.array(X_test_nat_proba[1])
+        X_test_preserved.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, str('filtered' + output_summary_name)))
 
     X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, output_summary_name),
                              index=False)
 
 
 if __name__ == '__main__':
-
     CRITICAL_ISOTOPE_LIST_1 = ['140Ce']
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_1,
          threshold_value=0,
