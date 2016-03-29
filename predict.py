@@ -70,7 +70,8 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
         else:
             print "database not found"
 
-    training_data = pd.concat([natural_training_database, technical_training_database])
+    training_data = pd.concat(
+        [natural_training_database, technical_training_database])
     training_data = training_data.dropna()
 
     if filter_negative:
@@ -79,7 +80,8 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
 
     if detection_threshold:
         for isotopes in isotope_trigger:
-            training_data = training_data[training_data[isotopes] >= threshold_value]
+            training_data = training_data[
+                training_data[isotopes] >= threshold_value]
 
     training_data = training_data.drop(NON_CRITICAL_ISOTOPES_, axis=1)
 
@@ -185,10 +187,13 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
         if track_class_probabilities:
             class_proba = X_test_predicted_proba
             total_natural_by_proba = len(np.where(class_proba[:, 0] <= 0.5)[0])
-            total_technical_by_proba = len(np.where(class_proba[:, 1] <= 0.5)[0])
+            total_technical_by_proba = len(
+                np.where(class_proba[:, 1] <= 0.5)[0])
 
-            nat_above_thresh = len(np.where(class_proba[:, 0] <= track_class_probabilities[0])[0])
-            tech_above_thresh = len(np.where(class_proba[:, 1] <= track_class_probabilities[1])[0])
+            nat_above_thresh = len(
+                np.where(class_proba[:, 0] <= track_class_probabilities[0])[0])
+            tech_above_thresh = len(
+                np.where(class_proba[:, 1] <= track_class_probabilities[1])[0])
 
             total_nat_above_proba_thresh = total_natural_by_proba - nat_above_thresh
             total_tech_above_proba_thresh = total_technical_by_proba - tech_above_thresh
@@ -204,16 +209,19 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
         # Organize and track data for table
         X_test_data = pd.DataFrame()
         X_test_data['run_name'] = [run_name]
-        X_test_data['total_particle_count'] = [X_test_nat_count + X_test_tec_count]
+        X_test_data['total_particle_count'] = [
+            X_test_nat_count + X_test_tec_count]
         X_test_data['nat_particle_count'] = [X_test_nat_count]
         X_test_data['tec_particle_count'] = [X_test_tec_count]
         X_test_data['nat_above_proba_thresh'] = [total_nat_above_proba_thresh]
-        X_test_data['tech_above_proba_thresh'] = [total_tech_above_proba_thresh]
+        X_test_data['tech_above_proba_thresh'] = [
+            total_tech_above_proba_thresh]
         X_test_data_track = X_test_data_track.append(X_test_data)
 
         X_test_nat_proba = pd.DataFrame(X_test_predicted_proba)
         X_test_preserved['natural_class_proba'] = np.array(X_test_nat_proba[1])
-        X_test_preserved.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, str('filtered' + output_summary_name)))
+        X_test_preserved.to_csv(os.path.join(
+            OUTPUT_DATA_SUMMARY_PATH, str('filtered' + output_summary_name)))
 
     X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, output_summary_name),
                              index=False)
