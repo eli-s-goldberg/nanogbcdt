@@ -210,11 +210,12 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
 
         X_test_nat_proba = pd.DataFrame(X_test_predicted_proba)
         X_test_preserved['natural_class_proba'] = np.array(X_test_nat_proba[1])
-        X_test_preserved.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'filtered_data', str('filtered_' +
-                                                                                            run_name[:-4] + output_summary_name)))
+        X_test_preserved.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 
+                                'filtered_data', str('filtered_' + run_name[:-4] + 
+                                output_summary_name)))
 
-    X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'data_summaries', output_summary_name),
-                             index=False)
+    X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'data_summaries', 
+                              output_summary_name), index=False)
 
 
 if __name__ == '__main__':
