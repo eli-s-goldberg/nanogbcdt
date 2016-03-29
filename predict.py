@@ -26,9 +26,11 @@ ISOTOPE_LIST_ = ['107Ag', '109Ag', '139La', '140Ce', '141Pr', '143Nd',
 
 CRITICAL_ISOTOPE_LIST_ = ['140Ce', '139La',
                           '88Sr']
+
+MAX_N_ESTIMATORS_ = 1000
 # Set the initial parameters for GBC to use in the initial tuning round
 GBC_INIT_PARAMS = {'loss': 'deviance', 'learning_rate': 0.1,
-                   'min_samples_leaf': 100, 'n_estimators': 1000, 'max_depth': 5,
+                   'min_samples_leaf': 100, 'n_estimators': MAX_N_ESTIMATORS_, 'max_depth': 5,
                    'random_state': None, 'max_features': 'sqrt'}
 
 GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
@@ -39,12 +41,11 @@ GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
                           'max_depth': [5]}  # note n_estimators automatically set
 
 
-def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          critical_isotope_list=CRITICAL_ISOTOPE_LIST_,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5, threshold_value=0,
-         isotope_trigger=['140Ce'], corrplot_training_show=False, max_n_estimators=1000,
+         isotope_trigger=['140Ce'], corrplot_training_show=False, max_n_estimators=MAX_N_ESTIMATORS_,
          track_class_probabilities=[0.1, 0.1], output_summary_name='output_summary.csv'):
-    print CRITICAL_ISOTOPE_LIST_
     NON_CRITICAL_ISOTOPES_ = set(ISOTOPE_LIST_) - set(critical_isotope_list)
 
     os.chdir(IMPORT_TRAINING_DATABASE_PATH)
@@ -57,16 +58,11 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
                 os.path.join(IMPORT_TRAINING_DATABASE_PATH, file),
                 header=0, index_col=False)
             natural_training_database['Classification'] = 1
-            # print 'total number of natural particles pre threshold: ', \
-            #     len(natural_training_database)
-
         elif fnmatch.fnmatchcase(file, TECHNICAL_TRAINING_DATABASE_NAME_):
             technical_training_database = pd.DataFrame.from_csv(
                 os.path.join(IMPORT_TRAINING_DATABASE_PATH, file),
                 header=0, index_col=False)
             technical_training_database['Classification'] = 0
-            # print 'total number of technincal particles pre threshold: ', \
-            #     len(technical_training_database)
         else:
             print "database not found"
 
@@ -91,12 +87,6 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
             colorbar=False, shrink=.9)
         plt.savefig('corrplot_training_data.eps', format='eps')
         plt.show()
-
-    # print '# natural particles post threshold: ', \
-    #     list(training_data['Classification']).count(1)
-    #
-    # print '# technical particles post threshold: ', \
-    #     list(training_data['Classification']).count(0)
 
     target_data = training_data['Classification']
     training_data = training_data.drop('Classification', axis=1)
@@ -170,7 +160,6 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
         test_data = test_data.drop(NON_CRITICAL_ISOTOPES_, axis=1)
         # assign orignal data a new name for later analysis
         X_test_preserved = test_data.copy(deep=True)
-        print X_test_preserved.head()
 
         # change format for machine learning
         X_test = test_data.as_matrix()
@@ -216,14 +205,15 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
         X_test_data['nat_above_proba_thresh'] = [total_nat_above_proba_thresh]
         X_test_data['tech_above_proba_thresh'] = [
             total_tech_above_proba_thresh]
+        
         X_test_data_track = X_test_data_track.append(X_test_data)
 
         X_test_nat_proba = pd.DataFrame(X_test_predicted_proba)
         X_test_preserved['natural_class_proba'] = np.array(X_test_nat_proba[1])
-        X_test_preserved.to_csv(os.path.join(
-            OUTPUT_DATA_SUMMARY_PATH, str('filtered' + output_summary_name)))
+        X_test_preserved.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'filtered_data', str('filtered_' +
+                                                                                            run_name[:-4] + output_summary_name)))
 
-    X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, output_summary_name),
+    X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'data_summaries', str(run_name[:-4] + '_' + output_summary_name)),
                              index=False)
 
 
@@ -232,7 +222,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_1,
          threshold_value=0,
          output_summary_name='summary_Ce_no_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -240,7 +230,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_1,
          threshold_value=20,
          output_summary_name='summary_Ce_20_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -249,7 +239,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_2,
          threshold_value=0,
          output_summary_name='summary_Ce_La_no_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -257,7 +247,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_2,
          threshold_value=20,
          output_summary_name='summary_Ce__La_20_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -266,7 +256,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_3,
          threshold_value=0,
          output_summary_name='summary_Ce_La_Sr_no_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -274,7 +264,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_3,
          threshold_value=20,
          output_summary_name='summary_Ce__La_Sr_20_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -284,7 +274,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_4,
          threshold_value=0,
          output_summary_name='summary_9_no_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -292,7 +282,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_4,
          threshold_value=20,
          output_summary_name='summary_9_20_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -318,7 +308,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_5,
          threshold_value=0,
          output_summary_name='summary_17_no_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -326,7 +316,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_5,
          threshold_value=20,
          output_summary_name='summary_17_20_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -335,7 +325,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_6,
          threshold_value=0,
          output_summary_name='summary_25_no_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=False, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
@@ -343,7 +333,7 @@ if __name__ == '__main__':
     main(critical_isotope_list=CRITICAL_ISOTOPE_LIST_6,
          threshold_value=20,
          output_summary_name='summary_25_20_thresh.csv',
-         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=True,
+         path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
          perform_gridsearch=True, detection_threshold=True, crossfolds=5,
          isotope_trigger=['140Ce'], corrplot_training_show=False,
          track_class_probabilities=[0.1, 0.1])
