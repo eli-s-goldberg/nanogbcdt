@@ -213,7 +213,7 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
         X_test_preserved.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'filtered_data', str('filtered_' +
                                                                                             run_name[:-4] + output_summary_name)))
 
-    X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'data_summaries', str(run_name[:-4] + '_' + output_summary_name)),
+    X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'data_summaries', output_summary_name),
                              index=False)
 
 
