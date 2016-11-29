@@ -56,3 +56,10 @@ Once you have all the package managers (I know, it's a bit much), follow these i
 
 This should install the packages, and their sub-dependencies.
 
+# Running the software - See Examples folder
+
+Now that you have python3 and the dependencies installed, let's get you up and running on the software. To do this, I've included a notebook that outlines how to use the API by example in `Examples/distinguish_nat_v_tech_API.ipynb` file. This is a special file that is able to be uploaded and presented in evaluated form on Github. It is also available for you to use, if you know how to use Jupyter notebook.
+
+## Using the provided databases.
+We've provided the example databases that go along with the work. These are contained in the `Databases` folder. Within this folder, we've included our training data (see API documentation for how to clean this data properly), as well as the test data. We will generate reports that evaluate the accuracy of the classifier wihtin the training set, as well as the results of applying the trained classifier to the test data. These are available in the recently accepted publication.
+Also in the examples folder are the training data and a correlation plot of the training data.
