@@ -56,28 +56,26 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
         if fnmatch.fnmatchcase(file, NATURAL_TRAINING_DATABASE_NAME_):
             natural_training_database = pd.DataFrame.from_csv(
                 os.path.join(IMPORT_TRAINING_DATABASE_PATH, file),
-                header=0, index_col=False)
+                header=0, index_col=None)
             natural_training_database['Classification'] = 1
         elif fnmatch.fnmatchcase(file, TECHNICAL_TRAINING_DATABASE_NAME_):
             technical_training_database = pd.DataFrame.from_csv(
                 os.path.join(IMPORT_TRAINING_DATABASE_PATH, file),
-                header=0, index_col=False)
+                header=0, index_col=None)
             technical_training_database['Classification'] = 0
         else:
-            print "database not found"
+            print
+            "database not found"
 
     training_data = pd.concat(
         [natural_training_database, technical_training_database])
     training_data = training_data.dropna()
 
     if filter_negative:
-        for isotopes in list(ISOTOPE_LIST_):
-            training_data = training_data[training_data[isotopes] >= 0]
+        training_data = training_data[training_data >= 0.0]
 
     if detection_threshold:
-        for isotopes in isotope_trigger:
-            training_data = training_data[
-                training_data[isotopes] >= threshold_value]
+        training_data = training_data[training_data >= threshold_value]
 
     training_data = training_data.drop(NON_CRITICAL_ISOTOPES_, axis=1)
 
@@ -105,7 +103,8 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
     # min loss according to test (normalize such that first loss is 0)
     test_score -= test_score[0]
     test_best_iter = x[np.argmin(test_score)]
-    print "optimum number of boosting stages: ", test_best_iter
+    print
+    "optimum number of boosting stages: ", test_best_iter
 
     GBC_GRID_SEARCH_PARAMS['n_estimators'] = [test_best_iter]
 
@@ -124,7 +123,8 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
 
         # store and print the best parameters
         best_params = grid_searcher.best_params_
-        print best_params
+        print
+        best_params
 
         gbc = GradientBoostingClassifier(**best_params)
 
@@ -205,17 +205,17 @@ def main(path='.', databases_filepath=DATABASES_BASEPATH, filter_negative=False,
         X_test_data['nat_above_proba_thresh'] = [total_nat_above_proba_thresh]
         X_test_data['tech_above_proba_thresh'] = [
             total_tech_above_proba_thresh]
-        
+
         X_test_data_track = X_test_data_track.append(X_test_data)
 
         X_test_nat_proba = pd.DataFrame(X_test_predicted_proba)
         X_test_preserved['natural_class_proba'] = np.array(X_test_nat_proba[1])
-        X_test_preserved.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 
-                                'filtered_data', str('filtered_' + run_name[:-4] + 
-                                output_summary_name)))
+        X_test_preserved.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH,
+                                             'filtered_data', str('filtered_' + run_name[:-4] +
+                                                                  output_summary_name)))
 
-    X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'data_summaries', 
-                              output_summary_name), index=False)
+    X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'data_summaries',
+                                          output_summary_name), index=False)
 
 
 if __name__ == '__main__':

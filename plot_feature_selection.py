@@ -66,7 +66,7 @@ def main(path='.', feature_selection_filepath=RFECV_RESULTS_BASEPATH, plot_rfecv
     if plot_rfecv_grid:
         rfecv_grid.plot(kind='box', ylim=[rfecv_y_limits])
         plt.savefig(os.path.join(feature_selection_filepath,'rfecv_plot.eps'))
-        # plt.show()
+        plt.show()
 
 
     # concatenate f1 and optimum length to plot holdout
@@ -78,7 +78,7 @@ def main(path='.', feature_selection_filepath=RFECV_RESULTS_BASEPATH, plot_rfecv
         box = holdout.boxplot(ax = ax, by='optimum_length')
         ax.set_ylim(holdout_y_limits)
         plt.savefig(os.path.join(feature_selection_filepath, 'holdout_plot.eps'))
-        # plt.show()
+        plt.show()
 
 
 
@@ -128,7 +128,7 @@ def main(path='.', feature_selection_filepath=RFECV_RESULTS_BASEPATH, plot_rfecv
         df3.sort_values(by=['observation %', 'feature'], ascending=[True, True], inplace=True)
         df3.plot(kind='barh', title='Feature Frequency (%) Inclusion')
         plt.savefig(os.path.join(feature_selection_filepath, 'ffi.eps'))
-        # plt.show()
+        plt.show()
 
 
 if __name__ == '__main__':
