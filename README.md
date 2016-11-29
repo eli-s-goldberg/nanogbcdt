@@ -1,4 +1,22 @@
-# Distinguishing engineered nanomaterials from natural nanomaterials using gradient-boosted classification decision trees.
+# Distinguishing engineered nanomaterials from natural nanomaterials using gradient-boosted classification decision trees
+
+This work is to support the paper, "Discrimination of natural and engineered nanoparticles based on their multi-element fingerprints", accepted to Environmental Science: Nano in November, 2016.
+
+Dr. Antonia Praetorius is the lead author. Model development was performed and is maintained by Dr. Eli Goldberg. Experimental work and other significant contributions are provided from the following authors:
+
+Antonia Praetorius^1,2^, Alexander Gundlach-Graham^3^, Eli Goldberg^4^, Willi Fabienke^1^, Jana Navratilova^1^, Andreas Gondikas^1^, Ralf Kaegi^5^, Detlef Günther^3^, Thilo Hofmann^1,2*^,  Frank von der Kammer^1*^.
+
+Affiliatios are as follows:
+^1^University of Vienna, Department of Environmental Geosciences and Environmental Science Research Network, Althanstr. 14, UZA II, 1090 Vienna, Austria
+^2^University of Vienna, Research Platform Nano-Norms-Nature, Vienna, Austria
+^3^ETH Zurich, Laboratory of Inorganic Chemistry, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
+^4^ETH Zurich, Institute for Chemical and Bioengineering, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
+^5^Eawag, Swiss Federal Institute of Aquatic Science and Technology, Überlandstr. 133, 8609 Dübendorf, Switzerland
+
+Corresponding author emails are: thilo.hofmann@univie.ac.at, frank.kammer@univie.ac.at.
+
+For technical work or questions, feel free to email Eli Goldberg at <elisgoldberg@gmail.com>.
+
 
 ## Installation instructions
 
