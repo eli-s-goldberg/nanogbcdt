@@ -7,18 +7,18 @@ This installation is for Mac OSX. Instructions are not given for a virutal envir
 The model is programmed in python3. If you don't have 3, please follow the following instructions.
 
 1. Install homebrew.
-Paste the following into a terminal prompt.
+    Paste the following into a terminal prompt.
 
-`'/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
+    `'/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 
-Update homebrew by pasting the following into a terminal prompt.
+    Update homebrew by pasting the following into a terminal prompt.
 
-`brew update`
+    `brew update`
 
 2. Use homebrew to install python3.
-Paste the following into a terminal prompt:
+    Paste the following into a terminal prompt:
 
-`sudo brew install python3`
+    `sudo brew install python3`
 
 ## Installing git
 Git is a great way to make code development easier. It's powerful, but the basics are super simple. To make things easy, use brew to install git.
