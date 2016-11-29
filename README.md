@@ -6,16 +6,16 @@ Dr. Antonia Praetorius is the lead author. Model development was performed and i
 
 Antonia Praetorius<sup>1,2</sup>, Alexander Gundlach-Graham<sup>3</sup>, Eli Goldberg<sup>4</sup>, Willi Fabienke<sup>1</sup>, Jana Navratilova<sup>1</sup>, Andreas Gondikas<sup>1</sup>, Ralf Kaegi<sup>5</sup>, Detlef Günther<sup>3</sup>, Thilo Hofmann<sup>1,2*</sup>,  Frank von der Kammer<sup>1*</sup>.
 
-Affiliatios are as follows:
-<sup>1</sup>University of Vienna, Department of Environmental Geosciences and Environmental Science Research Network, Althanstr. 14, UZA II, 1090 Vienna, Austria
-<sup>2</sup>University of Vienna, Research Platform Nano-Norms-Nature, Vienna, Austria
-<sup>3</sup>ETH Zurich, Laboratory of Inorganic Chemistry, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
-<sup>4</sup>ETH Zurich, Institute for Chemical and Bioengineering, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
-<sup>5</sup>Eawag, Swiss Federal Institute of Aquatic Science and Technology, Überlandstr. 133, 8609 Dübendorf, Switzerland
+Affiliations are as follows:
+*<sup>1</sup>University of Vienna, Department of Environmental Geosciences and Environmental Science Research Network, Althanstr. 14, UZA II, 1090 Vienna, Austria
+*<sup>2</sup>University of Vienna, Research Platform Nano-Norms-Nature, Vienna, Austria
+*<sup>3</sup>ETH Zurich, Laboratory of Inorganic Chemistry, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
+*<sup>4</sup>ETH Zurich, Institute for Chemical and Bioengineering, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
+*<sup>5</sup>Eawag, Swiss Federal Institute of Aquatic Science and Technology, Überlandstr. 133, 8609 Dübendorf, Switzerland
 
 Corresponding author emails are: thilo.hofmann@univie.ac.at, frank.kammer@univie.ac.at.
 
-For technical work or questions, feel free to email Eli Goldberg at <elisgoldberg@gmail.com>.
+For model-related questions, feel free to email Eli Goldberg at <elisgoldberg@gmail.com>.
 
 
 ## Installation instructions
