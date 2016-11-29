@@ -4,7 +4,7 @@ This work is to support the paper, "Discrimination of natural and engineered nan
 
 Dr. Antonia Praetorius is the lead author. Model development was performed and is maintained by Dr. Eli Goldberg. Experimental work and other significant contributions are provided from the following authors:
 
-Antonia Praetorius^1,2^, Alexander Gundlach-Graham^3^, Eli Goldberg^4^, Willi Fabienke^1^, Jana Navratilova^1^, Andreas Gondikas^1^, Ralf Kaegi^5^, Detlef Günther^3^, Thilo Hofmann^1,2*^,  Frank von der Kammer^1*^.
+Antonia Praetorius<sup>1,2</sup>, Alexander Gundlach-Graham^3^, Eli Goldberg^4^, Willi Fabienke^1^, Jana Navratilova^1^, Andreas Gondikas^1^, Ralf Kaegi^5^, Detlef Günther^3^, Thilo Hofmann^1,2*^,  Frank von der Kammer^1*^.
 
 Affiliatios are as follows:
 ^1^University of Vienna, Department of Environmental Geosciences and Environmental Science Research Network, Althanstr. 14, UZA II, 1090 Vienna, Austria
