@@ -1,9 +1,0 @@
-run_name,total_particle_count,nat_particle_count,tec_particle_count,nat_above_proba_thresh,tech_above_proba_thresh
-05_SPK2_naturalTest0_0.04CeO2.csv,638.0,634.0,4.0,5,1
-06_SPK3_naturalTest0_0.4CeO2.csv,656.0,649.0,7.0,5,4
-07_SPK4_naturalTest0_4CeO2.csv,935.0,907.0,28.0,10,6
-08_SPK5_naturalTest0_40CeO2.csv,1177.0,842.0,335.0,25,31
-09_SPK6_naturalTest0_400CeO2.csv,3614.0,1392.0,2222.0,153,155
-10_LT1_naturalSampleCeO2.csv,460.0,457.0,3.0,4,2
-11_PS2_naturalSampleCeO2.csv,1009.0,1004.0,5.0,4,2
-12_PS2_naturalSampleCeO2.csv,836.0,833.0,3.0,4,1
