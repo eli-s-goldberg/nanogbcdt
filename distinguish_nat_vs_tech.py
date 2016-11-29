@@ -8,22 +8,21 @@ import matplotlib.pyplot as plt
 from biokit.viz import corrplot
 from sklearn.model_selection import GridSearchCV
 
+
 # from helper_functions import heldout_score
 
-GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
-                          'learning_rate': [0.01, 0.1],
-                          'min_samples_leaf': [50, 100],
-                          'random_state': [None],
-                          'max_features': ['sqrt', 'log2'],
-                          'max_depth': [5]}  # note n_estimators automatically set
+
 
 
 class distinguish_nat_vs_tech():
     def __init__(self,
                  training_data=[],
-                 target_data=[]):
+                 target_data=[],
+                 output_summary_data_path=os.path.join(os.path.dirname(__file__), 'output'),
+                 output_summary_base_name='output_summary.csv'):
         self.training_data = training_data
         self.target_data = target_data
+        self.output_summary_base_name = output_summary_base_name
 
     def filter_negative(self, data):
         data = data[data >= 0].dropna()
@@ -47,9 +46,9 @@ class distinguish_nat_vs_tech():
         plt.savefig('corrplot_training_data.eps', format='eps')
         plt.show()
 
-    def conform_data_for_ML(self, training_data, target_data):
-        X = training_data.as_matrix()
-        y = np.array(target_data)
+    def conform_data_for_ML(self, training_df, target_df):
+        X = training_df.as_matrix()
+        y = np.array(target_df)
         return X, y
 
     def set_training_target_data(self, X, y):
@@ -57,12 +56,12 @@ class distinguish_nat_vs_tech():
         self.y = y
         return self
 
-    def split_target_from_training_data(self, data):
-        self.target_data = data['Classification']
-        self.training_data = data.drop('Classification', axis=1)
-        return self
+    def split_target_from_training_data(self, df, target_name='Classification'):
+        target_df = df[target_name]
+        training_df = df.drop(target_name, axis=1)
+        return training_df, target_df
 
-    def find_min_boosting_stages(self, gbc_base_params):
+    def find_min_boosting_stages(self, training_df, target_df, gbc_base_params):
         def heldout_score(clf, X_test, y_test, max_n_estimators):
             """compute deviance scores on ``X_test`` and ``y_test``. """
             clf.fit(X_test, y_test)
@@ -71,75 +70,107 @@ class distinguish_nat_vs_tech():
                 score[i] = clf.loss_(y_test, y_pred)
             return score
 
+        # conform data
+        confomed_data = self.conform_data_for_ML(training_df=training_df, target_df=target_df)
+
         # determine minimum number of estimators with least overfitting
         gbc = GradientBoostingClassifier(**gbc_base_params)
         self.gbc_base = gbc
 
         x_range = np.arange(gbc_base_params['n_estimators'] + 1)
-        test_score = heldout_score(gbc, self.X, self.y, gbc_base_params['n_estimators'])
+        test_score = heldout_score(gbc, confomed_data[0], confomed_data[1], gbc_base_params['n_estimators'])
 
         # min loss according to test (normalize such that first loss is 0)
         test_score -= test_score[0]
         test_best_iter = x_range[np.argmin(test_score)]
         self.optimum_boosting_stages = test_best_iter
-        return self
+        return self, test_best_iter
 
-    def find_optimum_gbc_parameters(self, crossfolds=5, method='perform_search',
-                                    gbc_base=[],
+    def find_optimum_gbc_parameters(self, crossfolds=5,
+                                    training_df=[],
+                                    target_df=[],
                                     gbc_search_params=[]):
-        gbc = self.gbc_base
 
-        if method == 'perform_search':
-            grid_searcher = GridSearchCV(estimator=gbc_base,
-                                         cv=crossfolds,
-                                         param_grid=gbc_search_params,
-                                         n_jobs=-1)
+        grid_searcher = GridSearchCV(estimator=self.gbc_base,
+                                     cv=crossfolds,
+                                     param_grid=gbc_search_params,
+                                     n_jobs=-1)
 
-            # call the grid search fit using the data
-            grid_searcher.fit(self.X, self.y)
+        # conform data
+        confomed_data = self.conform_data_for_ML(training_df=training_df, target_df=target_df)
 
-            # store and print the best parameters
-            self.gbc_best_params = grid_searcher.best_params_
+        # set training data for ease of use (self.X, self.y)
+        self.set_training_target_data(X=confomed_data[0], y=confomed_data[1])
 
-            # re-initialize classifier with best params and fit
-            if self.optimum_boosting_stages:
-                self.gbc_best_params['n_estimators'] = self.optimum_boosting_stages
+        # call the grid search fit using the data
+        grid_searcher.fit(self.X, self.y)
 
-            gbc = GradientBoostingClassifier(**self.gbc_best_params)
+        # store and print the best parameters
+        self.gbc_best_params = grid_searcher.best_params_
 
-        gbc_fitted = gbc.fit(self.X, self.y)
+        # re-initialize classifier with best params and fit
+        if self.optimum_boosting_stages:
+            self.gbc_best_params['n_estimators'] = self.optimum_boosting_stages
+
+        gbc_fitted = GradientBoostingClassifier(**self.gbc_best_params)
+
         return gbc_fitted
 
-    def track_class_probabilitie(self):
-        pass
-        
+    def filter_noncritical_isotopes(self, training_df, critical_isotopes):
+
+        # drop all but critical isotopes (occurs after critical isotopes are found)
+        non_crit_isotopes = set(list(training_df)) - set(critical_isotopes)
+        return training_df.drop(non_crit_isotopes, axis=1)
+
     def apply_trained_classification(self,
-                                     gbc = [],
+                                     gbc_fitted = self.gbc_fitted,
+                                     training_df = [],
+                                     target_df=[],
+                                     method='directory_lump',
                                      test_data_path='',
                                      filter_neg=True,
                                      apply_threshold=True,
-                                     critical_isotopes=[]):
+                                     critical_isotopes=False,  # provide an array
+                                     track_class_probabilities=True,
+                                     track_particle_counts=True):
         X_test_predicted_track = []
         X_test_predicted_proba_track = []
         X_test_data_track = pd.DataFrame()
         os.chdir(test_data_path)
         test_data_names = glob.glob('*.csv')
 
-        for test in test_data_names:
+        # conform data
+        confomed_data = self.conform_data_for_ML(training_df=training_df, target_df=target_df)
+
+        # set training data for ease of use (self.X, self.y)
+        self.set_training_target_data(X=confomed_data[0], y=confomed_data[1])
+
+        # store in class
+        #todo(decide to fit inside or outside function)
+
+        # gbc = gbc_fitted.fit(X=self.X, y= self.y, **kwargs  = gbc_fitted)
+
+        if method == 'single_run':
+
             run_name = str(test)
+
+            # import in test data for particular run into dataframe.
             test_data = pd.read_csv(os.path.join(
-                test_data_path, test), header=0, index_col=0)
+                test_data_path), header=0, index_col=0)
             test_data.reset_index(drop=True, inplace=True)
 
+            # filter negative, if assigned
             if filter_neg:
                 test_data = self.filter_negative(data=test_data)
 
+            # apply threshold, if assigned
             if apply_threshold:
                 test_data = self.apply_detection_threshold(data=test_data)
 
+            # drop all but critical isotopes (occurs after critical isotopes are found)
             if critical_isotopes:
-                non_crit_isotopes = set(list(self.training_data)) - set(critical_isotopes)
-                test_data = test_data.drop(non_crit_isotopes, axis=1)
+                test_data = self.filter_noncritical_isotopes(training_df=test_data,
+                                                             critical_isotopes=critical_isotopes)
 
             # assign orignal data a new name for later analysis
             X_test_preserved = test_data.copy(deep=True)
@@ -155,67 +186,125 @@ class distinguish_nat_vs_tech():
             X_test_predicted_proba = gbc.predict_proba(X_test)
             X_test_predicted_proba_track.append(X_test_predicted_proba)
 
-        print(test_data)
-        #     test_data = test_data.dropna()
-        #
-        #     # assign orignal data a new name for later analysis
-        #     X_test_preserved = test_data.copy(deep=True)
-        #
-        #     # change format for machine learning
-        #     X_test = test_data.as_matrix()
-        #
-        #     # use trained classifier to predict imported data
-        #     X_test_predicted = gbc.predict(X_test)
-        #     X_test_predicted_track.append(X_test_predicted)
-        #
-        #     # use trained classifier to output trained probabilities
-        #     X_test_predicted_proba = gbc.predict_proba(X_test)
-        #     X_test_predicted_proba_track.append(X_test_predicted_proba)
-        #
-        #     # determine the number of natural particles with prediction proba < 90%
-        #     if track_class_probabilities:
-        #         class_proba = X_test_predicted_proba
-        #         total_natural_by_proba = len(np.where(class_proba[:, 0] <= 0.5)[0])
-        #         total_technical_by_proba = len(
-        #             np.where(class_proba[:, 1] <= 0.5)[0])
-        #
-        #         nat_above_thresh = len(
-        #             np.where(class_proba[:, 0] <= track_class_probabilities[0])[0])
-        #         tech_above_thresh = len(
-        #             np.where(class_proba[:, 1] <= track_class_probabilities[1])[0])
-        #
-        #         total_nat_above_proba_thresh = total_natural_by_proba - nat_above_thresh
-        #         total_tech_above_proba_thresh = total_technical_by_proba - tech_above_thresh
-        #
-        #     else:
-        #         total_nat_above_proba_thresh = 0
-        #         total_tech_above_proba_thresh = 0
-        #
-        #     # keep track of particle counts in predictions
-        #     X_test_nat_count = list(X_test_predicted).count(1).__float__()
-        #     X_test_tec_count = list(X_test_predicted).count(0).__float__()
-        #
-        #     # Organize and track data for table
-        #     X_test_data = pd.DataFrame()
-        #     X_test_data['run_name'] = [run_name]
-        #     X_test_data['total_particle_count'] = [
-        #         X_test_nat_count + X_test_tec_count]
-        #     X_test_data['nat_particle_count'] = [X_test_nat_count]
-        #     X_test_data['tec_particle_count'] = [X_test_tec_count]
-        #     X_test_data['nat_above_proba_thresh'] = [total_nat_above_proba_thresh]
-        #     X_test_data['tech_above_proba_thresh'] = [
-        #         total_tech_above_proba_thresh]
-        #
-        #     X_test_data_track = X_test_data_track.append(X_test_data)
-        #
-        #     X_test_nat_proba = pd.DataFrame(X_test_predicted_proba)
-        #     X_test_preserved['natural_class_proba'] = np.array(X_test_nat_proba[1])
-        #     X_test_preserved.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH,
-        #                                          'filtered_data', str('filtered_' + run_name[:-4] +
-        #                                                               output_summary_name)))
-        #
-        # X_test_data_track.to_csv(os.path.join(OUTPUT_DATA_SUMMARY_PATH, 'data_summaries',
-        #                                       output_summary_name), index=False)
+            # total_nat_above_proba_thresh = []
+            # total_tech_above_proba_thresh = []
+            # determine the number of natural particles with prediction proba < 90%
+            if track_class_probabilities:
+                class_proba = X_test_predicted_proba
+                total_natural_by_proba = len(np.where(class_proba[:, 0] <= 0.5)[0])
+                total_technical_by_proba = len(
+                    np.where(class_proba[:, 1] <= 0.5)[0])
+
+                nat_above_thresh = len(
+                    np.where(class_proba[:, 0] <= track_class_probabilities[0])[0])
+                tech_above_thresh = len(
+                    np.where(class_proba[:, 1] <= track_class_probabilities[1])[0])
+
+                total_nat_above_proba_thresh = total_natural_by_proba - nat_above_thresh
+                total_tech_above_proba_thresh = total_technical_by_proba - tech_above_thresh
+
+            # keep track of particle counts in predictions
+            if track_particle_counts:
+                X_test_nat_count = list(X_test_predicted).count(1).__float__()
+                X_test_tec_count = list(X_test_predicted).count(0).__float__()
+
+                # Organize and track data for table
+                X_test_data = pd.DataFrame()
+                X_test_data['run_name'] = [run_name]
+                X_test_data['total_particle_count'] = [
+                    X_test_nat_count + X_test_tec_count]
+                X_test_data['nat_particle_count'] = [X_test_nat_count]
+                X_test_data['tec_particle_count'] = [X_test_tec_count]
+                X_test_data['nat_above_proba_thresh'] = [total_nat_above_proba_thresh]
+                X_test_data['tech_above_proba_thresh'] = [
+                    total_tech_above_proba_thresh]
+
+                X_test_data_track = X_test_data_track.append(X_test_data)
+
+                X_test_nat_proba = pd.DataFrame(X_test_predicted_proba)
+                X_test_preserved['natural_class_proba'] = np.array(X_test_nat_proba[1])
+
+        if method == 'directory_lump':
+
+            for test in test_data_names:
+                # initialize a variable to track the csv data names
+                run_name = str(test)
+
+                # import in test data for particular run into dataframe.
+                test_data = pd.read_csv(os.path.join(
+                    test_data_path, test), header=0, index_col=0)
+                test_data.reset_index(drop=True, inplace=True)
+
+                # filter negative, if assigned
+                if filter_neg:
+                    test_data = self.filter_negative(data=test_data)
+
+                # apply threshold, if assigned
+                if apply_threshold:
+                    test_data = self.apply_detection_threshold(data=test_data)
+
+                # drop all but critical isotopes (occurs after critical isotopes are found)
+                if critical_isotopes:
+                    non_crit_isotopes = set(list(self.training_data)) - set(critical_isotopes)
+                    test_data = test_data.drop(non_crit_isotopes, axis=1)
+
+                # assign orignal data a new name for later analysis
+                X_test_preserved = test_data.copy(deep=True)
+
+                # change format for machine learning
+                X_test = test_data.as_matrix()
+
+                # use trained classifier to predict imported data
+                X_test_predicted = gbc.predict(X_test)
+                X_test_predicted_track.append(X_test_predicted)
+
+                # use trained classifier to output trained probabilities
+                X_test_predicted_proba = gbc.predict_proba(X_test)
+                X_test_predicted_proba_track.append(X_test_predicted_proba)
+
+                total_nat_above_proba_thresh = []
+                total_tech_above_proba_thresh = []
+                # determine the number of natural particles with prediction proba < 90%
+                if track_class_probabilities:
+                    class_proba = X_test_predicted_proba
+                    total_natural_by_proba = len(np.where(class_proba[:, 0] <= 0.5)[0])
+                    total_technical_by_proba = len(
+                        np.where(class_proba[:, 1] <= 0.5)[0])
+
+                    nat_above_thresh = len(
+                        np.where(class_proba[:, 0] <= track_class_probabilities[0])[0])
+                    tech_above_thresh = len(
+                        np.where(class_proba[:, 1] <= track_class_probabilities[1])[0])
+
+                    total_nat_above_proba_thresh = total_natural_by_proba - nat_above_thresh
+                    total_tech_above_proba_thresh = total_technical_by_proba - tech_above_thresh
+
+                # keep track of particle counts in predictions
+                if track_particle_counts:
+                    X_test_nat_count = list(X_test_predicted).count(1).__float__()
+                    X_test_tec_count = list(X_test_predicted).count(0).__float__()
+
+                    # Organize and track data for table
+                    X_test_data = pd.DataFrame()
+                    X_test_data['run_name'] = [run_name]
+                    X_test_data['total_particle_count'] = [
+                        X_test_nat_count + X_test_tec_count]
+                    X_test_data['nat_particle_count'] = [X_test_nat_count]
+                    X_test_data['tec_particle_count'] = [X_test_tec_count]
+                    X_test_data['nat_above_proba_thresh'] = [total_nat_above_proba_thresh]
+                    X_test_data['tech_above_proba_thresh'] = [total_tech_above_proba_thresh]
+
+                    X_test_data_track = X_test_data_track.append(X_test_data)
+
+                    X_test_nat_proba = pd.DataFrame(X_test_predicted_proba)
+                    X_test_preserved['natural_class_proba'] = np.array(X_test_nat_proba[1])
+                    X_test_preserved.to_csv(os.path.join(output_summary_data_path,
+                                                         'filtered_data', str('filtered_' + run_name[:-4] +
+                                                                              output_summary_base_name)))
+
+        X_test_data_track.to_csv(os.path.join(output_summary_data_path, 'data_summaries',
+                                              output_summary_name), index=False)
+
 
 
 DATABASES_BASEPATH = os.path.join(os.path.dirname(__file__), 'databases')
@@ -262,22 +351,53 @@ training_data = training_data.dropna()
 nat_v_tech = distinguish_nat_vs_tech()
 neg_filt_training_data = nat_v_tech.filter_negative(data=training_data)
 thresh_neg_filt_training_data = nat_v_tech.apply_detection_threshold(data=neg_filt_training_data, threshold_value=5)
-nat_v_tech.split_target_from_training_data(data=thresh_neg_filt_training_data)
-ML_data = nat_v_tech.conform_data_for_ML(training_data=nat_v_tech.training_data, target_data=nat_v_tech.target_data)
-
-nat_v_tech.set_training_target_data(X=ML_data[0], y=ML_data[1])
+(training_df, target_df) = nat_v_tech.split_target_from_training_data(df=thresh_neg_filt_training_data)
 
 # initialize gbc to determine max estimators with least overfitting
 GBC_INIT_PARAMS = {'loss': 'deviance', 'learning_rate': 0.1,
                    'min_samples_leaf': 100, 'n_estimators': 1000,
                    'max_depth': 5, 'random_state': None, 'max_features': 'sqrt'}
 
-nat_v_tech.find_min_boosting_stages(gbc_base_params=GBC_INIT_PARAMS)
-print(nat_v_tech.optimum_boosting_stages)
+# find optimum boosting stages
+optimum_boosting_stages = nat_v_tech.find_min_boosting_stages(gbc_base_params=GBC_INIT_PARAMS,
+                                                              training_df=training_df,
+                                                              target_df=target_df)[1]
 
-gbc_fitted = nat_v_tech.find_optimum_gbc_parameters(gbc_base=nat_v_tech.gbc_base,
-                                                    method=False,
+# create grid search parameters in which to find the optimum set, set optimum boosting stages
+GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
+                          'learning_rate': [0.01, 0.1],
+                          'min_samples_leaf': [50, 100],
+                          'random_state': [None],
+                          'max_features': ['sqrt', 'log2'],
+                          'max_depth': [5],
+                          'n_estimators': [optimum_boosting_stages]}  # note n_estimators automatically set
+
+gbc_fitted = nat_v_tech.find_optimum_gbc_parameters(crossfolds=5,
+                                                    training_df=training_df,
+                                                    target_df=target_df,
                                                     gbc_search_params=GBC_GRID_SEARCH_PARAMS)
-nat_v_tech.apply_trained_classification(test_data_path=IMPORT_TESTING_DATABASE_PATH,
-                                        gbc= gbc_fitted,
-                                        critical_isotopes=False)
+
+# prepare data to be fed into
+gbc_fitted.fit()
+print (gbc_fitted)
+print(optimum_boosting_stages)
+
+
+#
+# ML_data = nat_v_tech.conform_data_for_ML(training_df=nat_v_tech.training_data, target_df=nat_v_tech.target_data)
+#
+# nat_v_tech.set_training_target_data(X=ML_data[0], y=ML_data[1])
+#
+
+#
+# nat_v_tech.find_min_boosting_stages(gbc_base_params=GBC_INIT_PARAMS)
+# print(nat_v_tech.optimum_boosting_stages)
+#
+# gbc_fitted = nat_v_tech.find_optimum_gbc_parameters(gbc_base=nat_v_tech.gbc_base,
+#                                                     method=False,
+#                                                     training_df=ML,
+#                                                     gbc_search_params=GBC_GRID_SEARCH_PARAMS
+#
+# nat_v_tech.apply_trained_classification(test_data_path=IMPORT_TESTING_DATABASE_PATH,
+#                                         gbc=gbc_fitted,
+#                                         critical_isotopes=CRITICAL_ISOTOPE_LIST_)
