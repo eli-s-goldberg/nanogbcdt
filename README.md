@@ -4,14 +4,14 @@ This work is to support the paper, "Discrimination of natural and engineered nan
 
 Dr. Antonia Praetorius is the lead author. Model development was performed and is maintained by Dr. Eli Goldberg. Experimental work and other significant contributions are provided from the following authors:
 
-Antonia Praetorius<sup>1,2</sup>, Alexander Gundlach-Graham^3^, Eli Goldberg^4^, Willi Fabienke^1^, Jana Navratilova^1^, Andreas Gondikas^1^, Ralf Kaegi^5^, Detlef Günther^3^, Thilo Hofmann^1,2*^,  Frank von der Kammer^1*^.
+Antonia Praetorius<sup>1,2</sup>, Alexander Gundlach-Graham<sup>3</sup>, Eli Goldberg<sup>4</sup>, Willi Fabienke<sup>1</sup>, Jana Navratilova<sup>1</sup>, Andreas Gondikas<sup>1</sup>, Ralf Kaegi<sup>5</sup>, Detlef Günther<sup>3</sup>, Thilo Hofmann<sup>1,2*</sup>,  Frank von der Kammer<sup>1*</sup>.
 
 Affiliatios are as follows:
-^1^University of Vienna, Department of Environmental Geosciences and Environmental Science Research Network, Althanstr. 14, UZA II, 1090 Vienna, Austria
-^2^University of Vienna, Research Platform Nano-Norms-Nature, Vienna, Austria
-^3^ETH Zurich, Laboratory of Inorganic Chemistry, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
-^4^ETH Zurich, Institute for Chemical and Bioengineering, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
-^5^Eawag, Swiss Federal Institute of Aquatic Science and Technology, Überlandstr. 133, 8609 Dübendorf, Switzerland
+<sup>1</sup>University of Vienna, Department of Environmental Geosciences and Environmental Science Research Network, Althanstr. 14, UZA II, 1090 Vienna, Austria
+<sup>2</sup>University of Vienna, Research Platform Nano-Norms-Nature, Vienna, Austria
+<sup>3</sup>ETH Zurich, Laboratory of Inorganic Chemistry, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
+<sup>4</sup>ETH Zurich, Institute for Chemical and Bioengineering, Vladimir-Prelog-Weg 1, 8093 Zurich, Switzerland
+<sup>5</sup>Eawag, Swiss Federal Institute of Aquatic Science and Technology, Überlandstr. 133, 8609 Dübendorf, Switzerland
 
 Corresponding author emails are: thilo.hofmann@univie.ac.at, frank.kammer@univie.ac.at.
 
