@@ -1,9 +1,11 @@
-# Installation instructions
+# Distinguishing engineered nanomaterials from natural nanomaterials using gradient-boosted classification decision trees.
+
+## Installation instructions
 
 This installation is for Mac OSX. Instructions are not given for a virutal environment, but it should work.
 
 
-## Obtaining python3
+### Obtaining python3
 The model is programmed in python3. If you don't have 3, please follow the following instructions.
 
 1. Install homebrew.
@@ -20,12 +22,12 @@ The model is programmed in python3. If you don't have 3, please follow the follo
 
     `sudo brew install python3`
 
-## Installing git
+### Installing git
 Git is a great way to make code development easier. It's powerful, but the basics are super simple. To make things easy, use brew to install git.
 
 `sudo brew install git`
 
-## Obtaining the script
+### Obtaining the script
 I do have aspirations of making this a deployable package, but for now I think it's best to keep it simple. The easiest method would be to download the file directory using the button above. This will download the all the files into a seperate folder. It should be able to be run without problem from this folder.
 
 The preferred method is to use git to fork the directory to your github account so you can continue development. To do this, press the 'fork' button. Once you've forked the model to your personal github account, use git to download the model.
@@ -34,9 +36,9 @@ Once forked, find the clone github address, copy it, and paste it into a termina
 
 `git clone https://github.com/eli-s-goldberg/Praetorius_Goldberg_2016.git`
 
-## Installing the dependencies
+### Installing the dependencies
 
-### Installing pip
+#### Installing pip
 Pip is another package manager, but specifically for python packages. If pip is already installed, there's no need to go through this process again. To determine if pip is already installed, paste this into a terminal prompt:
 
 `which pip`
@@ -49,17 +51,18 @@ Once this is complete, use easy_install to install pip by pasting the following 
 
 `sudo easy_install pip`
 
-### Using pip to install the package dependencies.
+#### Using pip to install the package dependencies
+
 Once you have all the package managers (I know, it's a bit much), follow these instructions to make sure you have all the packages required to run the model. The easiest way to do this is to use pip to install the requirements. The package requirements are contained in the 'requirements.txt' file. Navigate to the directory that contains this file and past in the following into a terminal prompt:
 
 `sudo pip3 install -r requirements.txt`
 
 This should install the packages, and their sub-dependencies.
 
-# Running the software - See Examples folder
+## Running the software - See Examples folder
 
 Now that you have python3 and the dependencies installed, let's get you up and running on the software. To do this, I've included a notebook that outlines how to use the API by example in [`Examples/distinguish_nat_v_tech_API.ipynb`](https://github.com/eli-s-goldberg/Praetorius_Goldberg_2016/blob/master/Examples/distinguish_nat_v_tech_API.ipynb) file. This is a special file that is able to be uploaded and presented in evaluated form on Github. It is also available for you to use, if you know how to use Jupyter notebook.
 
-## Using the provided databases.
+### Using the provided databases.
 We've provided the example databases that go along with the work. These are contained in the `Databases` folder. Within this folder, we've included our training data (see API documentation for how to clean this data properly), as well as the test data. We will generate reports that evaluate the accuracy of the classifier within the training set, as well as the results of applying the trained classifier to the test data. These are available in the recently accepted publication.
 Also in the examples folder are the training data and a correlation plot of the training data.
