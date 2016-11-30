@@ -230,11 +230,6 @@ IMPORT_TRAINING_DATABASE_PATH = os.path.join(DATABASES_BASEPATH,
 IMPORT_TESTING_DATABASE_PATH = os.path.join(DATABASES_BASEPATH,
 											'test_data')
 OUTPUT_DATA_SUMMARY_PATH = os.path.join(os.path.dirname(__file__), 'output')
-ISOTOPE_LIST_ = ['107Ag', '109Ag', '139La', '140Ce', '141Pr', '143Nd',
-				 '146Nd', '147Sm', '149Sm', '153Eu', '157Gd', '159Tb',
-				 '182W', '206Pb', '208Pb', '232Th', '238U', '25Mg',
-				 '55Mn', '59Co', '60Ni', '65Cu', '66Zn', '88Sr',
-				 '90Zr', '93Nb', '95Mo']
 
 CRITICAL_ISOTOPE_LIST_ = ['140Ce', '139La',
 						  '88Sr']
@@ -287,13 +282,16 @@ GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
 						  'max_depth': [5],
 						  'n_estimators': [optimum_boosting_stages]}  # note n_estimators automatically set
 
+# find the optimum gbc parameters
 gbc_fitted = nat_v_tech.find_optimum_gbc_parameters(crossfolds=5,
 													training_df=training_df,
 													target_df=target_df,
 													gbc_search_params=GBC_GRID_SEARCH_PARAMS)
 
+# conform the test data for ML and store it as X and y.
 (X, y) = nat_v_tech.conform_data_for_ML(training_df=training_df, target_df=target_df)
 
+# use the X and y data to train the model. Then test the trained model against the test data and output results.
 nat_v_tech.apply_trained_classification(test_data_path=IMPORT_TESTING_DATABASE_PATH,
 										output_summary_data_path=OUTPUT_DATA_SUMMARY_PATH,
 										output_summary_base_name='thresholded_summary_X_Y_Z.csv',
@@ -301,26 +299,3 @@ nat_v_tech.apply_trained_classification(test_data_path=IMPORT_TESTING_DATABASE_P
 										isotope_trigger='140Ce',
 										gbc_fitted=gbc_fitted,
 										X=X, y=y)
-
-print(gbc_fitted)
-print(optimum_boosting_stages)
-
-
-#
-# ML_data = nat_v_tech.conform_data_for_ML(training_df=nat_v_tech.training_data, target_df=nat_v_tech.target_data)
-#
-# nat_v_tech.set_training_target_data(X=ML_data[0], y=ML_data[1])
-#
-
-#
-# nat_v_tech.find_min_boosting_stages(gbc_base_params=GBC_INIT_PARAMS)
-# print(nat_v_tech.optimum_boosting_stages)
-#
-# gbc_fitted = nat_v_tech.find_optimum_gbc_parameters(gbc_base=nat_v_tech.gbc_base,
-#                                                     method=False,
-#                                                     training_df=ML,
-#                                                     gbc_search_params=GBC_GRID_SEARCH_PARAMS
-#
-# nat_v_tech.apply_trained_classification(test_data_path=IMPORT_TESTING_DATABASE_PATH,
-#                                         gbc=gbc_fitted,
-#                                         critical_isotopes=CRITICAL_ISOTOPE_LIST_)
