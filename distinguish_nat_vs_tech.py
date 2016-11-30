@@ -9,11 +9,6 @@ from biokit.viz import corrplot
 from sklearn.model_selection import GridSearchCV
 
 
-# from helper_functions import heldout_score
-
-
-
-
 class distinguish_nat_vs_tech():
 	def __init__(self,
 				 training_data=[],
@@ -56,7 +51,7 @@ class distinguish_nat_vs_tech():
 		self.y = y
 		return self
 
-	def split_target_from_training_data(self, df, target_name='Classification'):
+	def split_target_from_training_data(self, df, target_name='classification'):
 		target_df = df[target_name]
 		training_df = df.drop(target_name, axis=1)
 		return training_df, target_df
@@ -220,82 +215,3 @@ class distinguish_nat_vs_tech():
 
 		X_test_data_track.to_csv(os.path.join(output_summary_data_path, 'data_summaries',
 											  output_summary_base_name), index=False)
-
-
-DATABASES_BASEPATH = os.path.join(os.path.dirname(__file__), 'databases')
-NATURAL_TRAINING_DATABASE_NAME_ = 'natural_training_data.csv'
-TECHNICAL_TRAINING_DATABASE_NAME_ = 'technical_training_data.csv'
-IMPORT_TRAINING_DATABASE_PATH = os.path.join(DATABASES_BASEPATH,
-											 'training_data')
-IMPORT_TESTING_DATABASE_PATH = os.path.join(DATABASES_BASEPATH,
-											'test_data')
-OUTPUT_DATA_SUMMARY_PATH = os.path.join(os.path.dirname(__file__), 'output')
-
-CRITICAL_ISOTOPE_LIST_ = ['140Ce', '139La',
-						  '88Sr']
-
-os.chdir(IMPORT_TRAINING_DATABASE_PATH)
-training_files = glob.glob('*.csv')
-print(training_files)
-
-for file in training_files:
-	if fnmatch.fnmatchcase(file, TECHNICAL_TRAINING_DATABASE_NAME_):
-		technical_training_database = pd.DataFrame.from_csv(
-			os.path.join(IMPORT_TRAINING_DATABASE_PATH, file),
-			header=0, index_col=None)
-
-		# assign technical ID as = 0
-		technical_training_database['Classification'] = 0
-
-	elif fnmatch.fnmatchcase(file, NATURAL_TRAINING_DATABASE_NAME_):
-		natural_training_database = pd.DataFrame.from_csv(
-			os.path.join(IMPORT_TRAINING_DATABASE_PATH, file),
-			header=0, index_col=None)
-
-		# assign natural ID as = 1
-		natural_training_database['Classification'] = 1
-
-training_data = pd.concat([natural_training_database, technical_training_database])
-training_data = training_data.dropna()
-
-nat_v_tech = distinguish_nat_vs_tech()
-neg_filt_training_data = nat_v_tech.filter_negative(data=training_data)
-thresh_neg_filt_training_data = nat_v_tech.apply_detection_threshold(data=neg_filt_training_data, threshold_value=5)
-(training_df, target_df) = nat_v_tech.split_target_from_training_data(df=thresh_neg_filt_training_data)
-
-# initialize gbc to determine max estimators with least overfitting
-GBC_INIT_PARAMS = {'loss': 'deviance', 'learning_rate': 0.1,
-				   'min_samples_leaf': 100, 'n_estimators': 1000,
-				   'max_depth': 5, 'random_state': None, 'max_features': 'sqrt'}
-
-# find optimum boosting stages
-optimum_boosting_stages = nat_v_tech.find_min_boosting_stages(gbc_base_params=GBC_INIT_PARAMS,
-															  training_df=training_df,
-															  target_df=target_df)[1]
-
-# create grid search parameters in which to find the optimum set, set optimum boosting stages
-GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
-						  'learning_rate': [0.01, 0.1],
-						  'min_samples_leaf': [50, 100],
-						  'random_state': [None],
-						  'max_features': ['sqrt', 'log2'],
-						  'max_depth': [5],
-						  'n_estimators': [optimum_boosting_stages]}  # note n_estimators automatically set
-
-# find the optimum gbc parameters
-gbc_fitted = nat_v_tech.find_optimum_gbc_parameters(crossfolds=5,
-													training_df=training_df,
-													target_df=target_df,
-													gbc_search_params=GBC_GRID_SEARCH_PARAMS)
-
-# conform the test data for ML and store it as X and y.
-(X, y) = nat_v_tech.conform_data_for_ML(training_df=training_df, target_df=target_df)
-
-# use the X and y data to train the model. Then test the trained model against the test data and output results.
-nat_v_tech.apply_trained_classification(test_data_path=IMPORT_TESTING_DATABASE_PATH,
-										output_summary_data_path=OUTPUT_DATA_SUMMARY_PATH,
-										output_summary_base_name='thresholded_summary_X_Y_Z.csv',
-										track_class_probabilities=[0.1, 0.1],
-										isotope_trigger='140Ce',
-										gbc_fitted=gbc_fitted,
-										X=X, y=y)
