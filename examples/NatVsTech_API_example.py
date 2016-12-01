@@ -21,7 +21,6 @@ from sklearn.model_selection import GridSearchCV
 # Note: drop the "" around "__file__" when in a regular python file. 
 
 # In[2]:
-
 PARENT_PATH = os.path.abspath(os.path.join(os.path.dirname("__file__"), os.path.pardir))
 DATABASES_BASEPATH = os.path.abspath(os.path.join(os.path.dirname("__file__"), 'databases'))
 IMPORT_TRAINING_DATABASE_PATH = os.path.abspath(
@@ -38,12 +37,11 @@ print(IMPORT_TRAINING_DATABASE_PATH)
 print(OUTPUT_DATA_SUMMARY_PATH)
 
 # ## Training files
-# Import training files, combine, and concatenate into dataframes. 
+# Import training files, combine, and concatenate into dataframes.
 # Note: if you re-run the notebook without resetting the kernal, you'll get an error. Restart the notebook kernal and
 #  it will work.
 
 # In[3]:
-
 # set the natural and technical database training file names
 NATURAL_TRAINING_DATABASE_NAME_ = 'natural_training_data.csv'
 TECHNICAL_TRAINING_DATABASE_NAME_ = 'technical_training_data.csv'
@@ -83,14 +81,12 @@ training_data = training_data.dropna()
 # filtered, stored, and used for training and prediction.
 
 # In[4]:
-
 # initialize class
 nat_v_tech = NatVsTech()
 
 print(nat_v_tech)
 
 # In[5]:
-
 # filter the data of negative values
 neg_filt_training_data = nat_v_tech.filter_negative(data=training_data)
 
@@ -103,8 +99,7 @@ thresh_neg_filt_training_data = nat_v_tech.apply_detection_threshold(
 print(thresh_neg_filt_training_data.head())
 
 # In[6]:
-
-# right now training data contains the classification data. Split it. 
+# right now training data contains the classification data. Split it.
 (training_df, target_df) = nat_v_tech.split_target_from_training_data(
 	df=thresh_neg_filt_training_data)
 
@@ -115,7 +110,6 @@ print(training_df.head())
 print(target_df.head())
 
 # In[8]:
-
 # conform the test data for ML and store it as X and y.
 # (X, y) = nat_v_tech.conform_data_for_ML(training_df=training_df, target_df=target_df)
 
@@ -139,34 +133,13 @@ GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
 
 print(GBC_GRID_SEARCH_PARAMS)
 
-# determining optimum feature selection with rfecv 
+# determining optimum feature selection with rfecv
 nat_v_tech.rfecv_feature_identify(training_df=training_df, target_df=target_df,
 								  gbc_grid_params=GBC_GRID_SEARCH_PARAMS,
 								  gbc_init_params=GBC_INIT_PARAMS,
 								  n_splits=3)
 
-# In[ ]:
-
-
-
-
-# In[ ]:
-
-
-
-
-# In[ ]:
-
-
-
-
-# In[7]:
-
-
-
-
 # In[8]:
-
 # find optimum boosting stages
 optimum_boosting_stages = nat_v_tech.find_min_boosting_stages(gbc_base_params=GBC_INIT_PARAMS,
 															  training_df=training_df,
@@ -176,8 +149,7 @@ optimum_boosting_stages = nat_v_tech.find_min_boosting_stages(gbc_base_params=GB
 print(optimum_boosting_stages)
 
 # In[9]:
-
-# create grid search parameters in which to find the optimum set, 
+# create grid search parameters in which to find the optimum set,
 # set optimum boosting stages. Note: n_estimators automatically set
 GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
 						  'learning_rate': [0.01, 0.1],
@@ -191,7 +163,6 @@ GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
 print(GBC_GRID_SEARCH_PARAMS)
 
 # In[10]:
-
 # find the optimum gbc parameters
 gbc_fitted = nat_v_tech.find_optimum_gbc_parameters(crossfolds=5,
 													training_df=training_df,
@@ -202,9 +173,6 @@ gbc_fitted = nat_v_tech.find_optimum_gbc_parameters(crossfolds=5,
 print(gbc_fitted)
 
 # In[12]:
-
-
-
 # use the X and y data to train the model. Then test the trained model against the test data and output results.
 nat_v_tech.apply_trained_classification(test_data_path=IMPORT_TESTING_DATABASE_PATH,
 										output_summary_data_path=OUTPUT_DATA_SUMMARY_PATH,
@@ -213,10 +181,3 @@ nat_v_tech.apply_trained_classification(test_data_path=IMPORT_TESTING_DATABASE_P
 										isotope_trigger='140Ce',
 										gbc_fitted=gbc_fitted)
 
-
-# In[ ]:
-
-
-
-
-# In[ ]:
