@@ -21,18 +21,12 @@ class NatVsTech:
                  output_summary_base_name='output_summary.csv'):
         self.output_summary_data_path = output_summary_data_path
         self.output_summary_base_name = output_summary_base_name
-        self.x = 0
-        self.y = 0
 
     # compatibility between python2 and 3
     if sys.version_info >= (3, 0):
         def xrange(*args, **kwargs):
             return iter(range(*args, **kwargs))
 
-    def set_training_target_data(self, x, y):
-        self.x = x
-        self.y = y
-        return self
 
     def find_min_boosting_stages(self, training_df, target_df, gbc_base_params):
         def heldout_score(clf, X_test, y_test, max_n_estimators):
