@@ -12,58 +12,27 @@ from sklearn.feature_selection import RFECV
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
 
+from DataUtil import DataUtil
 
-class NatVsTech():
+
+class NatVsTech:
     def __init__(self,
-                 training_data=[],
-                 target_data=[],
                  output_summary_data_path=os.path.join(os.path.dirname(__file__), 'output'),
                  output_summary_base_name='output_summary.csv'):
-        self.training_data = training_data
-        self.target_data = target_data
+        self.output_summary_data_path = output_summary_data_path
         self.output_summary_base_name = output_summary_base_name
+        self.x = 0
+        self.y = 0
 
     # compatibility between python2 and 3
     if sys.version_info >= (3, 0):
         def xrange(*args, **kwargs):
             return iter(range(*args, **kwargs))
 
-    def filter_negative(self, data):
-        data = data[data >= 0].dropna()
-        return data
-
-    def apply_detection_threshold(self, data,
-                                  isotope_trigger='140Ce',
-                                  threshold_value=0):
-        data = data[data[isotope_trigger] >= threshold_value].dropna()
-        self.threshold_value = threshold_value
-        return data
-
-    def show_correlation(self, training_target_df, corrplot_name='corrplot.eps'):
-        corrplot.Corrplot(training_target_df).plot(
-            upper='text',
-            lower='circle',
-            fontsize=8,
-            colorbar=False,
-            shrink=.9)
-
-        plt.savefig(corrplot_name, format='eps')
-        plt.show()
-
-    def conform_data_for_ML(self, training_df, target_df):
-        X = training_df.as_matrix()
-        y = np.array(target_df)
-        return X, y
-
-    def set_training_target_data(self, X, y):
-        self.X = X
+    def set_training_target_data(self, x, y):
+        self.x = x
         self.y = y
         return self
-
-    def split_target_from_training_data(self, df, target_name='classification'):
-        target_df = df[target_name]
-        training_df = df.drop(target_name, axis=1)
-        return training_df, target_df
 
     def find_min_boosting_stages(self, training_df, target_df, gbc_base_params):
         def heldout_score(clf, X_test, y_test, max_n_estimators):
@@ -75,7 +44,7 @@ class NatVsTech():
             return score
 
         # conform data
-        conformed_data = self.conform_data_for_ML(training_df=training_df, target_df=target_df)
+        conformed_data = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
         # determine minimum number of estimators with least overfitting
         gbc = GradientBoostingClassifier(**gbc_base_params)
@@ -101,7 +70,7 @@ class NatVsTech():
                                      n_jobs=-1)
 
         # conform data
-        (X, y) = self.conform_data_for_ML(training_df=training_df, target_df=target_df)
+        (X, y) = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
         # call the grid search fit using the data
         grid_searcher.fit(X, y)
@@ -118,7 +87,6 @@ class NatVsTech():
         return gbc_fitted
 
     def filter_noncritical_isotopes(self, training_df, critical_isotopes):
-
         # drop all but critical isotopes (occurs after critical isotopes are found)
         non_crit_isotopes = set(list(training_df)) - set(critical_isotopes)
         return training_df.drop(non_crit_isotopes, axis=1)
@@ -130,8 +98,8 @@ class NatVsTech():
                                      gbc_fitted='gbc_fitted',
                                      track_class_probabilities=[0.1, 0.1],
                                      isotope_trigger='140Ce',
-                                     training_df=[],
-                                     target_df=[],
+                                     training_df=pd.DataFrame,
+                                     target_df=pd.DataFrame,
                                      filter_neg=True,
                                      apply_threshold=True,
                                      critical_isotopes=False,  # provide an array
@@ -143,7 +111,7 @@ class NatVsTech():
         os.chdir(test_data_path)
         test_data_names = glob.glob('*.csv')
 
-        (X, y) = self.conform_data_for_ML(training_df=training_df, target_df=target_df)
+        (X, y) = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
         gbc = gbc_fitted.fit(X, y)
 
@@ -159,18 +127,18 @@ class NatVsTech():
 
             # filter negative, if assigned
             if filter_neg:
-                test_data = self.filter_negative(data=test_data)
+                test_data = DataUtil.filter_negative(data=test_data)
 
             # apply threshold, if assigned
             if apply_threshold:
-                test_data = self.apply_detection_threshold(data=test_data, isotope_trigger=isotope_trigger)
+                test_data = DataUtil.apply_detection_threshold(data=test_data, isotope_trigger=isotope_trigger)
 
             # drop all but critical isotopes (occurs after critical isotopes are found)
             if critical_isotopes:
-                non_crit_isotopes = set(list(self.training_data)) - set(critical_isotopes)
+                non_crit_isotopes = set(list(training_df)) - set(test_data)
                 test_data = test_data.drop(non_crit_isotopes, axis=1)
 
-            # assign orignal data a new name for later analysis
+            # assign original data a new name for later analysis
             X_test_preserved = test_data.copy(deep=True)
 
             # change format for machine learning
@@ -250,7 +218,7 @@ class NatVsTech():
         feature_names = list(training_df.columns.values)
 
         # conform data
-        (X_all, y_all) = self.conform_data_for_ML(training_df=training_df, target_df=target_df)
+        (X_all, y_all) = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
         # initialize split cross validation
         sss = StratifiedShuffleSplit(n_splits=n_splits,
@@ -279,12 +247,12 @@ class NatVsTech():
             print(run, 'of: ', n_splits)
 
             if find_min_boosting_stages:
-                optimun_boosting_stages = self.find_min_boosting_stages(gbc_base_params=gbc_init_params,
+                optimum_boosting_stages = self.find_min_boosting_stages(gbc_base_params=gbc_init_params,
                                                                         training_df=training_df,
                                                                         target_df=target_df)[1]
 
-                gbc_init_params['n_estimators'] = optimun_boosting_stages
-                print(optimun_boosting_stages)
+                gbc_init_params['n_estimators'] = optimum_boosting_stages
+                print(optimum_boosting_stages)
 
             if cv_grid_search:
 
@@ -293,7 +261,7 @@ class NatVsTech():
                                                                           target_df=target_df,
                                                                           gbc_search_params=gbc_grid_params)
                 if find_min_boosting_stages:
-                    gbc_grid_fitted_params['n_estimators'] = optimun_boosting_stages
+                    gbc_grid_fitted_params['n_estimators'] = optimum_boosting_stages
 
                 # re-initialize GBC with grid-fit parameters
                 gbc = GradientBoostingClassifierrWithCoef(**gbc_grid_fitted_params)
@@ -337,7 +305,7 @@ class NatVsTech():
                 else:
                     a = 1
             nameList = pd.DataFrame(nameList)
-            nameListAll = nameListAll.append(nameList)  # append the name list
+            nameListAll = nameListAll.append([nameList])  # append the name list ###
             nameList = list(nameList)
             nameList = np.array(nameList)
 
@@ -356,21 +324,23 @@ class NatVsTech():
             # Holdout test results are generated here.
             # Predict the class from the holdout dataset
             rfecv.n_jobs = -1
-            holdout_preds = rfecv.predict(X_holdout)
+            holdout_preds = rfecv.predict(X_holdout)  ###
 
             # determine the F1
             rfc_all_f1 = metrics.f1_score(y_holdout, holdout_preds, pos_label=None,
-                                          average='weighted')
+                                          average='weighted')  ###
 
             # determine the R^2 Score
-            rfc_all_f2 = metrics.r2_score(y_holdout, holdout_preds)
+            rfc_all_f2 = metrics.r2_score(y_holdout, holdout_preds)  ###
             # determine the MAE - Do this because we want to determine sign.
-            rfc_all_f3 = metrics.mean_absolute_error(y_holdout, holdout_preds)
+            rfc_all_f3 = metrics.mean_absolute_error(y_holdout, holdout_preds)  ###
 
             # append the previous scores for aggregated analysis.
-            classScoreAll = classScoreAll.append([rfc_all_f1])
-            classScoreAll2 = classScoreAll2.append([rfc_all_f2])
-            classScoreAll3 = classScoreAll3.append([rfc_all_f3])
+            classScoreAll = classScoreAll.append([rfc_all_f1])  ###
+            classScoreAll2 = classScoreAll2.append([rfc_all_f2])  ###
+            classScoreAll3 = classScoreAll3.append([rfc_all_f3])  ###
             # determine the feature importances for aggregated analysis.
             refinedFeatureImportances = gbc.feature_importances_
             featureImportancesAll = featureImportancesAll.append([refinedFeatureImportances])
+
+        return nameListAll, rfecvGridScoresAll, holdout_preds, classScoreAll, classScoreAll2, classScoreAll3, featureImportancesAll

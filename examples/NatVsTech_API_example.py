@@ -11,7 +11,11 @@ import fnmatch
 import os.path
 import pandas as pd
 
+import matplotlib.pyplot as plt
+
 # import API one directory above
+from DataUtil import DataUtil
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname("__file__"), os.path.pardir)))
 from NatVsTech import NatVsTech
 from sklearn.model_selection import GridSearchCV
@@ -74,7 +78,7 @@ training_data = pd.concat([natural_training_database,
 						   technical_training_database])
 
 # remoove all the na values (other filtering done later)
-training_data = training_data.dropna()
+training_data = DataUtil.filter_na(training_data)
 
 # ## Using the API
 # Before you can use the API, you have to initialize the class. We'll then work through how the data is easily
@@ -88,20 +92,17 @@ print(nat_v_tech)
 
 # In[5]:
 # filter the data of negative values
-neg_filt_training_data = nat_v_tech.filter_negative(data=training_data)
+neg_filt_training_data = DataUtil.filter_negative(data=training_data)
 
 # threshold the data with a single isotope trigger
-thresh_neg_filt_training_data = nat_v_tech.apply_detection_threshold(
-	data=neg_filt_training_data,
-	threshold_value=5)
+thresh_neg_filt_training_data = DataUtil.apply_detection_threshold(data=neg_filt_training_data, threshold_value=5)
 
 # print to maake sure we're on target
 print(thresh_neg_filt_training_data.head())
 
 # In[6]:
 # right now training data contains the classification data. Split it.
-(training_df, target_df) = nat_v_tech.split_target_from_training_data(
-	df=thresh_neg_filt_training_data)
+(training_df, target_df) = DataUtil.split_target_from_training_data(df=thresh_neg_filt_training_data)
 
 # print training data to check structure
 print(training_df.head())
@@ -134,10 +135,21 @@ GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
 print(GBC_GRID_SEARCH_PARAMS)
 
 # determining optimum feature selection with rfecv
-nat_v_tech.rfecv_feature_identify(training_df=training_df, target_df=target_df,
+(nameListAll, rfecvGridScoresAll, holdout_preds, classScoreAll, classScoreAll2, classScoreAll3, featureImportancesAll) = nat_v_tech.rfecv_feature_identify(training_df=training_df, target_df=target_df,
 								  gbc_grid_params=GBC_GRID_SEARCH_PARAMS,
 								  gbc_init_params=GBC_INIT_PARAMS,
 								  n_splits=3)
+
+print(nameListAll)
+print(rfecvGridScoresAll)
+print(holdout_preds)
+print(classScoreAll)
+print(classScoreAll2)
+print(classScoreAll3)
+print(featureImportancesAll)
+rfecvGridScoresAll.plot(kind="box", ylim=[0, 1])
+plt.show()
+
 
 # In[8]:
 # find optimum boosting stages
@@ -179,5 +191,7 @@ nat_v_tech.apply_trained_classification(test_data_path=IMPORT_TESTING_DATABASE_P
 										output_summary_base_name='summary.csv',
 										track_class_probabilities=[0.1, 0.1],
 										isotope_trigger='140Ce',
-										gbc_fitted=gbc_fitted)
+										gbc_fitted=gbc_fitted,
+										training_df=training_df,
+										target_df=target_df)
 
