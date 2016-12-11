@@ -135,19 +135,19 @@ GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
 print(GBC_GRID_SEARCH_PARAMS)
 
 # determining optimum feature selection with rfecv
-(nameListAll, rfecvGridScoresAll, holdout_preds, classScoreAll, classScoreAll2, classScoreAll3, featureImportancesAll) = nat_v_tech.rfecv_feature_identify(training_df=training_df, target_df=target_df,
+result = nat_v_tech.rfecv_feature_identify(training_df=training_df, target_df=target_df,
 								  gbc_grid_params=GBC_GRID_SEARCH_PARAMS,
 								  gbc_init_params=GBC_INIT_PARAMS,
 								  n_splits=3)
 
-print(nameListAll)
-print(rfecvGridScoresAll)
-print(holdout_preds)
-print(classScoreAll)
-print(classScoreAll2)
-print(classScoreAll3)
-print(featureImportancesAll)
-rfecvGridScoresAll.plot(kind="box", ylim=[0, 1])
+print(result.name_list_)
+print(result.grid_scores_)
+print(result.holdout_predictions_)
+print(result.class_scores_f1_)
+print(result.class_scores_r2_)
+print(result.class_scores_mae_)
+print(result.feature_importances_)
+result.grid_scores_.plot(kind="box", ylim=[0, 1])
 plt.show()
 
 

@@ -13,6 +13,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from DataUtil import DataUtil
+from RFECVResult import RFECVResult
 
 
 class NatVsTech:
@@ -189,24 +190,15 @@ class NatVsTech:
                                               output_summary_base_name), index=False)
         return X_test_data_track
 
-    def rfecv_feature_identify(self, training_df=[],
-                               target_df=[], n_splits=30,
-                               test_size=0.15, random_state=0,
+    def rfecv_feature_identify(self, training_df=[], target_df=[],
+                               n_splits=30, test_size=0.15, random_state=0,
                                cv_grid_search=False,
-                               gbc_init_params=[],
-                               kfolds=5,
-                               gbc_grid_params=[],
+                               gbc_init_params=[], kfolds=5, gbc_grid_params=[],
                                find_min_boosting_stages=False):
 
         # todo(create more elegant output handling)
         # containerize for speed
-        nameListAll = pd.DataFrame()
-        optimumLengthAll = pd.DataFrame()
-        classScoreAll = pd.DataFrame()
-        classScoreAll2 = pd.DataFrame()
-        classScoreAll3 = pd.DataFrame()
-        featureImportancesAll = pd.DataFrame()
-        rfecvGridScoresAll = pd.DataFrame()
+        result = RFECVResult()
 
         # Store the feature names by using the headers in the trainingData DataFrame.
         feature_names = list(training_df.columns.values)
@@ -215,12 +207,7 @@ class NatVsTech:
         (X_all, y_all) = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
         # initialize split cross validation
-        sss = StratifiedShuffleSplit(n_splits=n_splits,
-                                     test_size=test_size,
-                                     random_state=random_state)
-
-        # get splits (silly initialization in new version of scikit).
-        sss.get_n_splits(X=X_all, y=y_all)
+        sss = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=random_state)
 
         # modify class function to enable gbc with rfecv
         class GradientBoostingClassifierrWithCoef(GradientBoostingClassifier):
@@ -237,22 +224,19 @@ class NatVsTech:
             X_train, X_holdout = X_all[train_index], X_all[test_index]
             y_train, y_holdout = y_all[train_index], y_all[test_index]
 
-            run = run + 1
-            print(run, 'of: ', n_splits)
+            run += 1
+            print('Runs: ', run, ' of ', n_splits)
 
+            optimum_boosting_stages = 1
             if find_min_boosting_stages:
                 optimum_boosting_stages = self.find_min_boosting_stages(gbc_base_params=gbc_init_params,
-                                                                        training_df=training_df,
-                                                                        target_df=target_df)[1]
-
+                                                                        training_df=training_df, target_df=target_df)[1]
                 gbc_init_params['n_estimators'] = optimum_boosting_stages
-                print(optimum_boosting_stages)
+                print('optimum_boosting_stages=', optimum_boosting_stages)
 
             if cv_grid_search:
-
                 gbc_grid_fitted_params = self.find_optimum_gbc_parameters(crossfolds=5,
-                                                                          training_df=training_df,
-                                                                          target_df=target_df,
+                                                                          training_df=training_df, target_df=target_df,
                                                                           gbc_search_params=gbc_grid_params)
                 if find_min_boosting_stages:
                     gbc_grid_fitted_params['n_estimators'] = optimum_boosting_stages
@@ -261,7 +245,7 @@ class NatVsTech:
                 gbc = GradientBoostingClassifierrWithCoef(**gbc_grid_fitted_params)
 
             # Define RFECV function, can  use 'accuracy' or 'f1' f1_weighted, f1_macro
-            rfecv = RFECV(estimator=gbc, step=1, cv=kfolds, scoring='f1_weighted')
+            rfecv = RFECV(estimator=gbc, step=1, cv=kfolds, scoring='f1_weighted')  #, n_jobs=-1)
 
             # First, the recursive feature elimination model is trained. This fits to the optimum model and begins
             # recursion.
@@ -270,71 +254,64 @@ class NatVsTech:
             # Second, the cross-validation scores are calculated such that grid_scores_[i] corresponds to the CV score
             # of the i-th subset of features. In other words, from all the features to a single feature, the cross
             # validation score is recorded.
-            rfecvGridScoresAll = rfecvGridScoresAll.append([rfecv.grid_scores_])
+            result.grid_scores_ = result.grid_scores_.append([rfecv.grid_scores_])
 
             # Third, the .support_ attribute reports whether the feature remains after RFECV or not. The possible
             # parameters are inspected by their ranking. Low ranking features are removed.
-            supPort = rfecv.support_
+            rfecv_support = rfecv.support_
 
             #  True/False values, where true is a parameter of importance identified by
             # recursive alg.
 
-            possParams = rfecv.ranking_
-            min_feature_params = rfecv.get_params(deep=True)
-            optimumLengthAll = optimumLengthAll.append([rfecv.n_features_])
-            featureSetIDs = list(supPort)
-            featureSetIDs = list(featureSetIDs)
+            # possible_params = rfecv.ranking_
+            # min_feature_params = rfecv.get_params(deep=True)
+            # optimum_lengths = optimum_lengths.append([rfecv.n_features_])
+            feature_set_ids = list(rfecv_support)
+            feature_set_ids = list(feature_set_ids)
             feature_names = list(feature_names)
-            namedFeatures = list(training_df.columns.values)
-            namedFeatures = np.array(namedFeatures)
+            # named_features = list(training_df.columns.values)
+            # named_features = np.array(named_features)
 
             # Loop over each item in the list of true/false values, if true, pull out the corresponding feature name
             # and store it in the appended namelist. This namelist is rewritten each time, but the information is
             # retained.
-            nameList = []  # Initialize a blank array to accept the list of names for features identified as 'True',
+            name_list = []  # Initialize a blank array to accept the list of names for features identified as 'True',
             # or important.
-            for i in range(0, len(featureSetIDs)):
-                if featureSetIDs[i]:
-                    nameList.append(feature_names[i])
-                else:
-                    a = 1
-            nameList = pd.DataFrame(nameList)
-            nameListAll = nameListAll.append([nameList])  # append the name list ###
-            nameList = list(nameList)
-            nameList = np.array(nameList)
+            for i in range(0, len(feature_set_ids)):
+                if feature_set_ids[i]:
+                    name_list.append(feature_names[i])
+
+            result.name_list_ = result.name_list_.append([pd.DataFrame(name_list)])  # append the name list
 
             # Fourth, the training process begins anew, with the objective to trim to the optimum feature and retrain
             # the model without cross validation i.e., test the holdout set. The new training test set size for the
             # holdout validation should be the entire 90% of the training set (X_trimTrainSet). The holdout test
             # set also needs to be trimmed. The same transformation is performed on the holdout set (X_trimHoldoutSet).
-            X_trimTrainSet = rfecv.transform(X_train)
-            X_trimHoldoutSet = rfecv.transform(X_holdout)
+            X_trim_training_set = rfecv.transform(X_train)
+            X_trim_holdout_set = rfecv.transform(X_holdout)
 
             # Fifth, no recursive feature elimination is needed (it has already been done and the poor features
             # removed).
             # Here the model is trained against the trimmed training set X's and corresponding Y's.
-            gbc.fit(X_trimTrainSet, y_train)
+            gbc.fit(X_trim_training_set, y_train)
 
             # Holdout test results are generated here.
             # Predict the class from the holdout dataset
-            rfecv.n_jobs = -1
-            holdout_preds = rfecv.predict(X_holdout)  ###
+            holdout_predictions = rfecv.predict(X_holdout)
 
             # determine the F1
-            rfc_all_f1 = metrics.f1_score(y_holdout, holdout_preds, pos_label=None,
-                                          average='weighted')  ###
-
+            rfc_f1 = metrics.f1_score(y_holdout, holdout_predictions, pos_label=None, average='weighted')
             # determine the R^2 Score
-            rfc_all_f2 = metrics.r2_score(y_holdout, holdout_preds)  ###
+            rfc_r2 = metrics.r2_score(y_holdout, holdout_predictions)
             # determine the MAE - Do this because we want to determine sign.
-            rfc_all_f3 = metrics.mean_absolute_error(y_holdout, holdout_preds)  ###
+            rfc_mae = metrics.mean_absolute_error(y_holdout, holdout_predictions)
 
             # append the previous scores for aggregated analysis.
-            classScoreAll = classScoreAll.append([rfc_all_f1])  ###
-            classScoreAll2 = classScoreAll2.append([rfc_all_f2])  ###
-            classScoreAll3 = classScoreAll3.append([rfc_all_f3])  ###
-            # determine the feature importances for aggregated analysis.
-            refinedFeatureImportances = gbc.feature_importances_
-            featureImportancesAll = featureImportancesAll.append([refinedFeatureImportances])
+            result.class_scores_f1_ = result.class_scores_f1_.append([rfc_f1])
+            result.class_scores_r2_ = result.class_scores_r2_.append([rfc_r2])
+            result.class_scores_mae_ = result.class_scores_mae_.append([rfc_mae])
 
-        return nameListAll, rfecvGridScoresAll, holdout_preds, classScoreAll, classScoreAll2, classScoreAll3, featureImportancesAll
+            # determine the feature importances for aggregated analysis.
+            result.feature_importances_ = result.feature_importances_.append([gbc.feature_importances_])
+
+        return result
