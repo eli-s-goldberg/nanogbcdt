@@ -1,19 +1,18 @@
+# -*- encoding: utf-8 -*-
 import glob
 import os
 import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from biokit.viz import corrplot
 from sklearn import metrics
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from DataUtil import DataUtil
-from RFECVResult import RFECVResult
+from src.nanogbcdt.DataUtil import DataUtil
+from src.nanogbcdt.RFECVResult import RFECVResult
 
 
 class NatVsTech:
@@ -28,7 +27,6 @@ class NatVsTech:
         def xrange(*args, **kwargs):
             return iter(range(*args, **kwargs))
 
-
     def find_min_boosting_stages(self, training_df, target_df, gbc_base_params):
         def heldout_score(clf, X_test, y_test, max_n_estimators):
             """compute deviance scores on ``X_test`` and ``y_test``. """
@@ -38,7 +36,7 @@ class NatVsTech:
                 score[i] = clf.loss_(y_test, y_pred)
             return score
 
-        # conform data
+        # conform src
         conformed_data = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
         # determine minimum number of estimators with least overfitting
@@ -64,10 +62,10 @@ class NatVsTech:
                                      param_grid=gbc_search_params,
                                      n_jobs=-1)
 
-        # conform data
+        # conform src
         (X, y) = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
-        # call the grid search fit using the data
+        # call the grid search fit using the src
         grid_searcher.fit(X, y)
 
         # store and print the best parameters
@@ -112,10 +110,10 @@ class NatVsTech:
 
         for test in test_data_names:
 
-            # initialize a variable to track the csv data names
+            # initialize a variable to track the csv src names
             run_name = str(test)
 
-            # import in test data for particular run into dataframe.
+            # import in test src for particular run into dataframe.
             test_data = pd.read_csv(os.path.join(
                 test_data_path, test), header=0, index_col=0)
             test_data.reset_index(drop=True, inplace=True)
@@ -133,13 +131,13 @@ class NatVsTech:
                 non_crit_isotopes = set(list(training_df)) - set(test_data)
                 test_data = test_data.drop(non_crit_isotopes, axis=1)
 
-            # assign original data a new name for later analysis
+            # assign original src a new name for later analysis
             X_test_preserved = test_data.copy(deep=True)
 
             # change format for machine learning
             X_test = test_data.as_matrix()
 
-            # use trained classifier to predict imported data
+            # use trained classifier to predict imported src
             X_test_predicted = gbc.predict(X_test)
             X_test_predicted_track.append(X_test_predicted)
 
@@ -168,7 +166,7 @@ class NatVsTech:
                 X_test_nat_count = list(X_test_predicted).count(1).__float__()
                 X_test_tec_count = list(X_test_predicted).count(0).__float__()
 
-                # Organize and track data for table
+                # Organize and track src for table
                 X_test_data = pd.DataFrame()
                 X_test_data['run_name'] = [run_name]
                 X_test_data['total_particle_count'] = [
@@ -203,7 +201,7 @@ class NatVsTech:
         # Store the feature names by using the headers in the trainingData DataFrame.
         feature_names = list(training_df.columns.values)
 
-        # conform data
+        # conform src
         (X_all, y_all) = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
         # initialize split cross validation
@@ -245,7 +243,7 @@ class NatVsTech:
                 gbc = GradientBoostingClassifierrWithCoef(**gbc_grid_fitted_params)
 
             # Define RFECV function, can  use 'accuracy' or 'f1' f1_weighted, f1_macro
-            rfecv = RFECV(estimator=gbc, step=1, cv=kfolds, scoring='f1_weighted')  #, n_jobs=-1)
+            rfecv = RFECV(estimator=gbc, step=1, cv=kfolds, scoring='f1_weighted')  # , n_jobs=-1)
 
             # First, the recursive feature elimination model is trained. This fits to the optimum model and begins
             # recursion.
