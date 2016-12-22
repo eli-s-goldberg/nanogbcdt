@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class DataUtil:
     @staticmethod
     def filter_na(data):
@@ -15,6 +16,12 @@ class DataUtil:
     def apply_detection_threshold(data, isotope_trigger='140Ce', threshold_value=0):
         data = data[data[isotope_trigger] >= threshold_value].dropna()
         return data
+
+    @staticmethod
+    def filter_noncritical_isotopes(training_df, critical_isotopes):
+        # drop all but critical isotopes (occurs after critical isotopes are found)
+        non_crit_isotopes = set(list(training_df)) - set(critical_isotopes)
+        return training_df.drop(non_crit_isotopes, axis=1)
 
     @staticmethod
     def split_target_from_training_data(df, target_name='classification'):

@@ -1,7 +1,7 @@
 # coding: utf-8
 
-# ## Imports 
-# Note: python3. Please install requirements using requirments.txt in main directory. 
+# ## Imports
+# Note: python3. Please install requirements using requirments.txt in main directory.
 
 # In[1]:
 
@@ -14,15 +14,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # import API one directory above
-from DataUtil import DataUtil
+from nanogbcdt.DataUtil import DataUtil
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname("__file__"), os.path.pardir)))
-from NatVsTech import NatVsTech
+from nanogbcdt.NatVsTech import NatVsTech
 from sklearn.model_selection import GridSearchCV
 
 # ## Directory structure
 # Note: we generically define directory so it will work on any OS: mac/pc/linux.
-# Note: drop the "" around "__file__" when in a regular python file. 
+# Note: drop the "" around "__file__" when in a regular python file.
 
 # In[2]:
 PARENT_PATH = os.path.abspath(os.path.join(os.path.dirname("__file__"), os.path.pardir))
@@ -77,7 +77,7 @@ print(training_files)
 training_data = pd.concat([natural_training_database,
 						   technical_training_database])
 
-# remoove all the na values (other filtering done later)
+# remove all the na values (other filtering done later)
 training_data = DataUtil.filter_na(training_data)
 
 # ## Using the API
@@ -150,12 +150,12 @@ print(result.feature_importances_)
 result.grid_scores_.plot(kind="box", ylim=[0, 1])
 plt.show()
 
+gbc_base = nat_v_tech.create_gbc_base(gbc_base_params=GBC_INIT_PARAMS)
 
 # In[8]:
 # find optimum boosting stages
-optimum_boosting_stages = nat_v_tech.find_min_boosting_stages(gbc_base_params=GBC_INIT_PARAMS,
-															  training_df=training_df,
-															  target_df=target_df)[1]
+optimum_boosting_stages = nat_v_tech.find_min_boosting_stages(training_df=training_df, target_df=target_df,
+                                                              gbc_base=gbc_base, gbc_base_params=GBC_INIT_PARAMS)
 
 # print optimum boosting stages
 print(optimum_boosting_stages)
@@ -177,9 +177,8 @@ print(GBC_GRID_SEARCH_PARAMS)
 # In[10]:
 # find the optimum gbc parameters
 gbc_fitted = nat_v_tech.find_optimum_gbc_parameters(crossfolds=5,
-													training_df=training_df,
-													target_df=target_df,
-													gbc_search_params=GBC_GRID_SEARCH_PARAMS)
+													training_df=training_df, target_df=target_df,
+                                                    gbc_base=gbc_base, gbc_search_params=GBC_GRID_SEARCH_PARAMS)
 
 # print the optimum gbc structure
 print(gbc_fitted)
