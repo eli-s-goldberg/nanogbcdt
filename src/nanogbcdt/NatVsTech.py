@@ -1,19 +1,18 @@
+# -*- encoding: utf-8 -*-
 import glob
 import os
 import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from biokit.viz import corrplot
 from sklearn import metrics
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from DataUtil import DataUtil
-from RFECVResult import RFECVResult
+from nanogbcdt.DataUtil import DataUtil
+from nanogbcdt.RFECVResult import RFECVResult
 
 
 class NatVsTech:
@@ -28,8 +27,14 @@ class NatVsTech:
         def xrange(*args, **kwargs):
             return iter(range(*args, **kwargs))
 
-
     def find_min_boosting_stages(self, training_df, target_df, gbc_base_params):
+        """
+        :param training_df: dataframe; dataframe containing isotope data
+        :param target_df: dataframe; dataframe containing classification data
+        :param gbc_base_params: dict; dict containing initial parameters for the gbc
+        :return: integer; returns optimal number of boosting stages
+        """
+
         def heldout_score(clf, X_test, y_test, max_n_estimators):
             """compute deviance scores on ``X_test`` and ``y_test``. """
             clf.fit(X_test, y_test)
@@ -38,7 +43,7 @@ class NatVsTech:
                 score[i] = clf.loss_(y_test, y_pred)
             return score
 
-        # conform data
+        # conform src
         conformed_data = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
         # determine minimum number of estimators with least overfitting
@@ -58,30 +63,42 @@ class NatVsTech:
                                     training_df=[],
                                     target_df=[],
                                     gbc_search_params=[]):
+        """
+        :param crossfolds: int; number of crossfolds
+        :param training_df: dataframe; dataframe containing isotope data
+        :param target_df: dataframe; dataframe containing classification data
+        :param gbc_search_params: dict; dict containing gbc search space
+        :return: dict; dict contains optimal parameters for gbc
+        """
 
         grid_searcher = GridSearchCV(estimator=self.gbc_base,
                                      cv=crossfolds,
                                      param_grid=gbc_search_params,
                                      n_jobs=-1)
 
-        # conform data
+        # conform src
         (X, y) = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
-        # call the grid search fit using the data
+        # call the grid search fit using the src
         grid_searcher.fit(X, y)
 
         # store and print the best parameters
-        self.gbc_best_params = grid_searcher.best_params_
+        gbc_best_params = grid_searcher.best_params_
 
         # re-initialize classifier with best params and fit
         if self.optimum_boosting_stages:
-            self.gbc_best_params['n_estimators'] = self.optimum_boosting_stages
+            gbc_best_params['n_estimators'] = self.optimum_boosting_stages
 
-        gbc_fitted = GradientBoostingClassifier(**self.gbc_best_params)
+        gbc_fitted = GradientBoostingClassifier(**gbc_best_params)
 
         return gbc_fitted
 
     def filter_noncritical_isotopes(self, training_df, critical_isotopes):
+        """
+        :param training_df: dataframe; dataframe containing isotope data
+        :param critical_isotopes: list; list of isotope names to remain
+        :return: dataframe; dataframe containing only critical isotopes
+        """
         # drop all but critical isotopes (occurs after critical isotopes are found)
         non_crit_isotopes = set(list(training_df)) - set(critical_isotopes)
         return training_df.drop(non_crit_isotopes, axis=1)
@@ -97,8 +114,25 @@ class NatVsTech:
                                      target_df=pd.DataFrame,
                                      filter_neg=True,
                                      apply_threshold=True,
+                                     threshold_value = 0,
                                      critical_isotopes=False,  # provide an array
                                      track_particle_counts=True):
+        """
+        :param test_data_path: string; string test data path. Preferred to pass os.path()
+        :param output_summary_data_path: string
+        :param output_summary_base_name: string
+        :param gbc_fitted: scikit-learn abc object;
+        :param track_class_probabilities: 2-element array; [0.1,0.1] is remove values between 10-90% likelihood.
+        :param isotope_trigger: string; string containing isotope name
+        :param training_df: dataframe
+        :param target_df: dataframe
+        :param filter_neg: boolean; True is filter negatives
+        :param apply_threshold: boolean; True is apply threshold
+        :param threshold_value: float
+        :param critical_isotopes: list; list of critical isotope names
+        :param track_particle_counts: boolean; True means track class probability threshold
+        :return:
+        """
         X_test_predicted_track = []
         X_test_predicted_proba_track = []
         X_test_data_track = pd.DataFrame()
@@ -112,10 +146,10 @@ class NatVsTech:
 
         for test in test_data_names:
 
-            # initialize a variable to track the csv data names
+            # initialize a variable to track the csv src names
             run_name = str(test)
 
-            # import in test data for particular run into dataframe.
+            # import in test src for particular run into dataframe.
             test_data = pd.read_csv(os.path.join(
                 test_data_path, test), header=0, index_col=0)
             test_data.reset_index(drop=True, inplace=True)
@@ -126,20 +160,22 @@ class NatVsTech:
 
             # apply threshold, if assigned
             if apply_threshold:
-                test_data = DataUtil.apply_detection_threshold(data=test_data, isotope_trigger=isotope_trigger)
+                test_data = DataUtil.apply_detection_threshold(data=test_data,
+                                                               isotope_trigger=isotope_trigger,
+                                                               threshold_value=threshold_value)
 
             # drop all but critical isotopes (occurs after critical isotopes are found)
             if critical_isotopes:
                 non_crit_isotopes = set(list(training_df)) - set(test_data)
                 test_data = test_data.drop(non_crit_isotopes, axis=1)
 
-            # assign original data a new name for later analysis
+            # assign original src a new name for later analysis
             X_test_preserved = test_data.copy(deep=True)
 
             # change format for machine learning
             X_test = test_data.as_matrix()
 
-            # use trained classifier to predict imported data
+            # use trained classifier to predict imported src
             X_test_predicted = gbc.predict(X_test)
             X_test_predicted_track.append(X_test_predicted)
 
@@ -168,7 +204,7 @@ class NatVsTech:
                 X_test_nat_count = list(X_test_predicted).count(1).__float__()
                 X_test_tec_count = list(X_test_predicted).count(0).__float__()
 
-                # Organize and track data for table
+                # Organize and track src for table
                 X_test_data = pd.DataFrame()
                 X_test_data['run_name'] = [run_name]
                 X_test_data['total_particle_count'] = [
@@ -195,15 +231,27 @@ class NatVsTech:
                                cv_grid_search=False,
                                gbc_init_params=[], kfolds=5, gbc_grid_params=[],
                                find_min_boosting_stages=False):
+        """
+        :param training_df: dataframe
+        :param target_df: dataframe
+        :param n_splits: integer
+        :param test_size: float; value between 0 and 1
+        :param random_state: float; 0 is random
+        :param cv_grid_search: dict
+        :param gbc_init_params: dict
+        :param kfolds: int
+        :param gbc_grid_params: dict
+        :param find_min_boosting_stages: boolean; True means find min boosting stages
+        :return:
+        """
 
-        # todo(create more elegant output handling)
         # containerize for speed
         result = RFECVResult()
 
         # Store the feature names by using the headers in the trainingData DataFrame.
         feature_names = list(training_df.columns.values)
 
-        # conform data
+        # conform src
         (X_all, y_all) = DataUtil.conform_data_for_ml(training_df=training_df, target_df=target_df)
 
         # initialize split cross validation
@@ -245,7 +293,7 @@ class NatVsTech:
                 gbc = GradientBoostingClassifierrWithCoef(**gbc_grid_fitted_params)
 
             # Define RFECV function, can  use 'accuracy' or 'f1' f1_weighted, f1_macro
-            rfecv = RFECV(estimator=gbc, step=1, cv=kfolds, scoring='f1_weighted')  #, n_jobs=-1)
+            rfecv = RFECV(estimator=gbc, step=1, cv=kfolds, scoring='f1_weighted')  # , n_jobs=-1)
 
             # First, the recursive feature elimination model is trained. This fits to the optimum model and begins
             # recursion.

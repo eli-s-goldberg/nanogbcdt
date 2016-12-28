@@ -1,7 +1,7 @@
 # coding: utf-8
 
-# ## Imports 
-# Note: python3. Please install requirements using requirments.txt in main directory. 
+# ## Imports
+# Note: python3. Please install requirements using requirments.txt in main directory.
 
 # In[1]:
 
@@ -10,7 +10,6 @@ import glob
 import fnmatch
 import os.path
 import pandas as pd
-
 import matplotlib.pyplot as plt
 
 # import API one directory above
@@ -22,7 +21,7 @@ from sklearn.model_selection import GridSearchCV
 
 # ## Directory structure
 # Note: we generically define directory so it will work on any OS: mac/pc/linux.
-# Note: drop the "" around "__file__" when in a regular python file. 
+# Note: drop the "" around "__file__" when in a regular python file.
 
 # In[2]:
 PARENT_PATH = os.path.abspath(os.path.join(os.path.dirname("__file__"), os.path.pardir))
