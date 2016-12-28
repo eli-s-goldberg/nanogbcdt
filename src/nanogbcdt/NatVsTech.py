@@ -10,6 +10,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
+import matplotlib.pyplot as plt
 
 from nanogbcdt.DataUtil import DataUtil
 from nanogbcdt.RFECVResult import RFECVResult
@@ -114,7 +115,7 @@ class NatVsTech:
                                      target_df=pd.DataFrame,
                                      filter_neg=True,
                                      apply_threshold=True,
-                                     threshold_value = 0,
+                                     threshold_value=0,
                                      critical_isotopes=False,  # provide an array
                                      track_particle_counts=True):
         """
@@ -355,6 +356,7 @@ class NatVsTech:
             rfc_mae = metrics.mean_absolute_error(y_holdout, holdout_predictions)
 
             # append the previous scores for aggregated analysis.
+            result.holdout_predictions_ = result.holdout_predictions_.append([holdout_predictions])
             result.class_scores_f1_ = result.class_scores_f1_.append([rfc_f1])
             result.class_scores_r2_ = result.class_scores_r2_.append([rfc_r2])
             result.class_scores_mae_ = result.class_scores_mae_.append([rfc_mae])
@@ -363,3 +365,84 @@ class NatVsTech:
             result.feature_importances_ = result.feature_importances_.append([gbc.feature_importances_])
 
         return result
+
+    def plot_feature_frequency(self, result=''):
+
+        # copy result into a new name to avoid over-writing
+        result_copy = result.name_list_.copy(deep=True)
+        # rename the column for convenience
+        result_copy.name_list_.columns = ["isotope"]
+
+        # count runs by output
+        optimum_count = pd.DataFrame(result_copy.feature_importances_.count(axis=1),
+                                     columns=['optimal_length'])
+
+        # isolate uniques
+        unique_featur_list = result_copy.name_list_['isotope'].unique()
+        name_count = list(result_copy.name_list_['isotope'].values)
+
+        df1 = pd.DataFrame()
+        df2 = pd.DataFrame()
+        for feature_id in unique_featur_list:
+            df11 = name_count.count(feature_id)
+            df1 = df1.append([df11], ignore_index=True)
+
+            df22 = [feature_id]
+            df2 = df2.append(df22, ignore_index=True)
+
+        # turn into a percent
+        df1 = df1 / pd.Series(len(optimum_count)) * pd.Series(100)
+
+        # sort and plot
+        df3 = pd.concat((df2, df1), axis=1)
+        df3.index = unique_featur_list
+        df3.columns = ['feature', 'observation %']
+        df3.sort_values(by=['observation %', 'feature'], ascending=[True, True], inplace=True)
+        df3.plot(kind='barh', title='Feature Frequency (%) Inclusion')
+        # plt.savefig(os.path.join(feature_selection_filepath, 'ffi.eps'))
+        plt.show()
+
+    def plot_holdout_scores(self, result=[], scorer=pd.DataFrame()):
+        # result: result_class
+        # scorer: result.class_scores_f1_
+
+        # copy to avoid overwriting
+
+        #  calculate holdout groups using optimum count
+        optimum_count = pd.DataFrame(result.feature_importances_.count(axis=1), columns=['optimal_length'])
+
+        # copy to avoid over-writing
+        result_copy = scorer.copy(deep=True)
+
+        # rename the column for convenience
+        result_copy.columns = ['holdout_f1_scores']
+
+        holdout_groups = result_copy
+        holdout_groups['optimal_length'] = optimum_count
+        print(holdout_groups)
+
+        # calculate Q1, median, Q3, and variance
+        holdout_groups = holdout_groups.groupby(by=['optimal_length'])
+
+        holdout_group_names = list(holdout_groups.groups)
+        print(holdout_group_names)
+        holdout_group_score_track = pd.DataFrame()
+        for group_ in holdout_group_names:
+            holdout_group_score = pd.DataFrame()
+            holdout_group_score_ = np.array(holdout_groups.get_group(group_)['holdout_f1_scores'])
+            holdout_group_score['group'] = [group_]
+            holdout_group_score['quartile_1'] = [np.percentile(holdout_group_score_, 25)]
+            holdout_group_score['median'] = [np.percentile(holdout_group_score_, 50)]
+            holdout_group_score['quartile_3'] = [np.percentile(holdout_group_score_, 75)]
+            holdout_group_score['inner_quartile_range'] = [float(holdout_group_score['quartile_3'] - \
+                                                                 holdout_group_score['quartile_1'])]
+            holdout_group_score['number_observed_in_group'] = [len(holdout_groups.groups.get(group_))]
+            if holdout_group_score['inner_quartile_range'].all() > 0:
+                holdout_group_score['optimality_score'] = [float(
+                    (1 / holdout_group_score['group']) * (1 / holdout_group_score['median']) * (
+                        1 / holdout_group_score['inner_quartile_range']) * (
+                        holdout_group_score['number_observed_in_group']))]
+
+            holdout_group_score_track = holdout_group_score_track.append(holdout_group_score)
+
+        print(holdout_group_score_track)

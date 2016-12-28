@@ -12,7 +12,7 @@ class RFECVResult:
         self.class_scores_mae_ = pd.DataFrame()
         self.feature_importances_ = pd.DataFrame()
         self.grid_scores_ = pd.DataFrame()
-        self.holdout_predictions_ = []
+        self.holdout_predictions_ = pd.DataFrame()
 
 #    def __str__(self):
 #        return print("{} [name_list_={}, optimum_lengths_={}, class_scores_f1_={}, class_scores_r2_={}, "

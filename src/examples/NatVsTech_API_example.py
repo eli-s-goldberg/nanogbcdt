@@ -11,12 +11,10 @@ import fnmatch
 import os.path
 import pandas as pd
 import matplotlib.pyplot as plt
+from nanogbcdt.DataUtil import DataUtil
+from nanogbcdt.NatVsTech import NatVsTech
 
-# import API one directory above
-from DataUtil import DataUtil
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname("__file__"), os.path.pardir)))
-from NatVsTech import NatVsTech
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname("__file__"), os.path.pardir)))
 from sklearn.model_selection import GridSearchCV
 
 # ## Directory structure
@@ -161,14 +159,7 @@ print(optimum_boosting_stages)
 
 # In[9]:
 # create grid search parameters in which to find the optimum set,
-# set optimum boosting stages. Note: n_estimators automatically set
-GBC_GRID_SEARCH_PARAMS = {'loss': ['exponential', 'deviance'],
-						  'learning_rate': [0.01, 0.1],
-						  'min_samples_leaf': [50, 100],
-						  'random_state': [None],
-						  'max_features': ['sqrt', 'log2'],
-						  'max_depth': [5],
-						  'n_estimators': [optimum_boosting_stages]}
+
 
 # print search parameter grid to verify init structure
 print(GBC_GRID_SEARCH_PARAMS)
