@@ -11,8 +11,8 @@ from sklearn.feature_selection import RFECV
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from src.nanogbcdt.DataUtil import DataUtil
-from src.nanogbcdt.RFECVResult import RFECVResult
+from nanogbcdt.DataUtil import DataUtil
+from nanogbcdt.RFECVResult import RFECVResult
 
 
 class NatVsTech:
@@ -28,6 +28,13 @@ class NatVsTech:
             return iter(range(*args, **kwargs))
 
     def find_min_boosting_stages(self, training_df, target_df, gbc_base_params):
+        """
+        :param training_df: dataframe; dataframe containing isotope data
+        :param target_df: dataframe; dataframe containing classification data
+        :param gbc_base_params: dict; dict containing initial parameters for the gbc
+        :return: integer; returns optimal number of boosting stages
+        """
+
         def heldout_score(clf, X_test, y_test, max_n_estimators):
             """compute deviance scores on ``X_test`` and ``y_test``. """
             clf.fit(X_test, y_test)
@@ -56,6 +63,13 @@ class NatVsTech:
                                     training_df=[],
                                     target_df=[],
                                     gbc_search_params=[]):
+        """
+        :param crossfolds: int; number of crossfolds
+        :param training_df: dataframe; dataframe containing isotope data
+        :param target_df: dataframe; dataframe containing classification data
+        :param gbc_search_params: dict; dict containing gbc search space
+        :return: dict; dict contains optimal parameters for gbc
+        """
 
         grid_searcher = GridSearchCV(estimator=self.gbc_base,
                                      cv=crossfolds,
@@ -69,17 +83,22 @@ class NatVsTech:
         grid_searcher.fit(X, y)
 
         # store and print the best parameters
-        self.gbc_best_params = grid_searcher.best_params_
+        gbc_best_params = grid_searcher.best_params_
 
         # re-initialize classifier with best params and fit
         if self.optimum_boosting_stages:
-            self.gbc_best_params['n_estimators'] = self.optimum_boosting_stages
+            gbc_best_params['n_estimators'] = self.optimum_boosting_stages
 
-        gbc_fitted = GradientBoostingClassifier(**self.gbc_best_params)
+        gbc_fitted = GradientBoostingClassifier(**gbc_best_params)
 
         return gbc_fitted
 
     def filter_noncritical_isotopes(self, training_df, critical_isotopes):
+        """
+        :param training_df: dataframe; dataframe containing isotope data
+        :param critical_isotopes: list; list of isotope names to remain
+        :return: dataframe; dataframe containing only critical isotopes
+        """
         # drop all but critical isotopes (occurs after critical isotopes are found)
         non_crit_isotopes = set(list(training_df)) - set(critical_isotopes)
         return training_df.drop(non_crit_isotopes, axis=1)
@@ -95,8 +114,25 @@ class NatVsTech:
                                      target_df=pd.DataFrame,
                                      filter_neg=True,
                                      apply_threshold=True,
+                                     threshold_value = 0,
                                      critical_isotopes=False,  # provide an array
                                      track_particle_counts=True):
+        """
+        :param test_data_path: string; string test data path. Preferred to pass os.path()
+        :param output_summary_data_path: string
+        :param output_summary_base_name: string
+        :param gbc_fitted: scikit-learn abc object;
+        :param track_class_probabilities: 2-element array; [0.1,0.1] is remove values between 10-90% likelihood.
+        :param isotope_trigger: string; string containing isotope name
+        :param training_df: dataframe
+        :param target_df: dataframe
+        :param filter_neg: boolean; True is filter negatives
+        :param apply_threshold: boolean; True is apply threshold
+        :param threshold_value: float
+        :param critical_isotopes: list; list of critical isotope names
+        :param track_particle_counts: boolean; True means track class probability threshold
+        :return:
+        """
         X_test_predicted_track = []
         X_test_predicted_proba_track = []
         X_test_data_track = pd.DataFrame()
@@ -124,7 +160,9 @@ class NatVsTech:
 
             # apply threshold, if assigned
             if apply_threshold:
-                test_data = DataUtil.apply_detection_threshold(data=test_data, isotope_trigger=isotope_trigger)
+                test_data = DataUtil.apply_detection_threshold(data=test_data,
+                                                               isotope_trigger=isotope_trigger,
+                                                               threshold_value=threshold_value)
 
             # drop all but critical isotopes (occurs after critical isotopes are found)
             if critical_isotopes:
@@ -193,8 +231,20 @@ class NatVsTech:
                                cv_grid_search=False,
                                gbc_init_params=[], kfolds=5, gbc_grid_params=[],
                                find_min_boosting_stages=False):
+        """
+        :param training_df: dataframe
+        :param target_df: dataframe
+        :param n_splits: integer
+        :param test_size: float; value between 0 and 1
+        :param random_state: float; 0 is random
+        :param cv_grid_search: dict
+        :param gbc_init_params: dict
+        :param kfolds: int
+        :param gbc_grid_params: dict
+        :param find_min_boosting_stages: boolean; True means find min boosting stages
+        :return:
+        """
 
-        # todo(create more elegant output handling)
         # containerize for speed
         result = RFECVResult()
 
