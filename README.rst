@@ -107,7 +107,7 @@ The preferred method is to use git to fork the directory to your github account 
 Once forked, find the clone github address, copy it, and paste it into a terminal prompt. This will copy the contents of the github page into a directory and initalize it for git. Please navigate to a convenient place before cloning the directory. I've included what this would look like from this directory:
 ::
 
-git clone https://github.com/eli-s-goldberg/Praetorius_Goldberg_2016.git
+git clone https://github.com/eli-s-goldberg/nanogbcdt.git
 
 
 
