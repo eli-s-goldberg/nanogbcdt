@@ -61,7 +61,7 @@ Installation
 Documentation
 =============
 
-Please find our documentation at https://github.com/eli-s-goldberg/Praetorius_Goldberg_2016/wiki. Documentation will also
+Please find our documentation at https://github.com/eli-s-goldberg/nanogbcdt/wiki. Documentation will also
 be made available at https://Praetorius_Goldberg_2016.readthedocs.io/, as soon as possible.
 
 This work is to support the paper, "Discrimination of natural and engineered nanoparticles based on their multi-element fingerprints", accepted to Environmental Science: Nano in November, 2016.
