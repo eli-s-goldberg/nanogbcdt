@@ -54,7 +54,7 @@ Generated with https://github.com/ionelmc/cookiecutter-pylibrary
 Installation
 ============
 
-See installation in [wiki](/nanogbcdt/wiki). 
+See installation in https://github.com/eli-s-goldberg/nanogbcdt/wiki
 
 Documentation
 =============
