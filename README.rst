@@ -56,7 +56,7 @@ Installation
 
 ::
 
-    pip install nanogbcdt
+    See installation in wiki. 
 
 Documentation
 =============
@@ -79,7 +79,7 @@ Affiliations are as follows:
 
 Corresponding author emails are: thilo.hofmann@univie.ac.at, frank.kammer@univie.ac.at.
 
-For model-related questions, feel free to email Eli Goldberg at elisgoldberg@gmail.com.
+For model-related questions, feel free to email Eli Goldberg at elisgoldberg@gmail.com, Antonia Praetorius at antonia.praetorius@univie.ac.at, and/or Alex Gundlach-Graham at graham@inorg.chem.ethz.ch. 
 
 
 Examples
