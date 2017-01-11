@@ -64,7 +64,7 @@ Documentation
 Please find our documentation at https://github.com/eli-s-goldberg/nanogbcdt/wiki. Documentation will also
 be made available at https://Praetorius_Goldberg_2016.readthedocs.io/, as soon as possible.
 
-This work is to support the paper, "Discrimination of natural and engineered nanoparticles based on their multi-element fingerprints", accepted to Environmental Science: Nano in November, 2016.
+This work is to support the paper, "Discrimination of natural and engineered nanoparticles based on their multi-element fingerprints", accepted to Environmental Science: Nano in December, 2016.
 
 Dr. Antonia Praetorius is the lead author. Model development was performed and is maintained by Dr. Eli Goldberg. Experimental work and other significant contributions are provided from the following authors:
 
