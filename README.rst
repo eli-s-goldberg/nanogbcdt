@@ -56,7 +56,7 @@ Installation
 
 ::
 
-    See installation in wiki. 
+    See installation in `wiki <https://github.com/eli-s-goldberg/nanogbcdt/wiki>`. 
 
 Documentation
 =============
